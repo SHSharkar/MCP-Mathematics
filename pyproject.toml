@@ -1,5 +1,5 @@
 [project]
-name = "mcp-math"
+name = "mcp-mathematics"
 version = "1.0.0"
 description = "Production-ready Model Context Protocol server for mathematical operations"
 readme = "README.md"
@@ -7,7 +7,7 @@ requires-python = ">=3.10"
 authors = [{ name = "Md. Sazzad Hossain Sharkar", email = "md@szd.sh" }]
 keywords = ["mcp", "model-context-protocol", "mathematical", "scientific-computing", "ai-assistant", "claude", "fastmcp", "ast-evaluation", "secure", "production", "batch-processing", "mathematical-functions", "unicode-operators", "expression-parser"]
 license = { text = "MIT" }
-urls = { Source = "https://github.com/SHSharkar/MCP-Math" }
+urls = { Source = "https://github.com/SHSharkar/MCP-Mathematics" }
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
@@ -25,7 +25,10 @@ dependencies = [
 ]
 
 [project.scripts]
-mcp-math = "mcp_math:main"
+mcp-mathematics = "mcp_mathematics:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/mcp_mathematics"]
 
 [build-system]
 requires = ["hatchling"]

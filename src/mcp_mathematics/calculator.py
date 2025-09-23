@@ -18,27 +18,27 @@ MAX_HISTORY_SIZE = 100
 MAX_FACTORIAL_INPUT = 170
 MAX_POWER_EXPONENT = 1000
 
-COMPUTATION_TIMEOUT = 5.0
+COMPUTATION_TIMEOUT = 50.0
 ENABLE_AUDIT_LOGGING = True
 
-MAX_COMPUTATION_TIME = 2.0
-MAX_RECURSIVE_CALLS = 100
+MAX_COMPUTATION_TIME = 20.0
+MAX_RECURSIVE_CALLS = 1000
 ENABLE_RATE_LIMITING = True
 RATE_LIMIT_WINDOW = 60
-MAX_REQUESTS_PER_WINDOW = 100
+MAX_REQUESTS_PER_WINDOW = 100000
 ENABLE_INPUT_HASHING = True
 
 FORBIDDEN_PATTERNS = [
-    r'import\\s+',
-    r'exec\\s*\\(',
-    r'eval\\s*\\(',
+    r'import\s+',
+    r'exec\s*\(',
+    r'eval\s*\(',
     r'__.*__',
-    r'globals\\s*\\(',
-    r'locals\\s*\\(',
-    r'getattr\\s*\\(',
-    r'setattr\\s*\\(',
-    r'delattr\\s*\\(',
-    r'hasattr\\s*\\(',
+    r'globals\s*\(',
+    r'locals\s*\(',
+    r'getattr\s*\(',
+    r'setattr\s*\(',
+    r'delattr\s*\(',
+    r'hasattr\s*\(',
 ]
 
 _request_history: dict[str, list[float]] = {}

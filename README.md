@@ -1,12 +1,12 @@
-# MCP Math
+# MCP Mathematics
 
 A powerful Model Context Protocol (MCP) server that brings production-ready mathematical calculations to AI assistants like Claude, featuring secure AST-based evaluation and comprehensive mathematical functions.
 
-## What Is MCP Math?
+## What Is MCP Mathematics?
 
-MCP Math transforms your AI assistant into a powerful mathematical computation engine. Built specifically for the Model Context Protocol, this production-ready server enables AI agents to perform complex calculations through a secure, sandboxed environment. By leveraging Python's Abstract Syntax Tree (AST) evaluation, it delivers robust mathematical capabilities while maintaining the highest security standards—no direct code execution, no security risks.
+MCP Mathematics transforms your AI assistant into a powerful mathematical computation engine. Built specifically for the Model Context Protocol, this production-ready server enables AI agents to perform complex calculations through a secure, sandboxed environment. By leveraging Python's Abstract Syntax Tree (AST) evaluation, it delivers robust mathematical capabilities while maintaining the highest security standards—no direct code execution, no security risks.
 
-## Why Choose MCP Math?
+## Why Choose MCP Mathematics?
 
 ### Uncompromising Security
 - **AST-Based Evaluation**: Every expression is parsed and validated through Python's AST, eliminating code injection vulnerabilities
@@ -27,7 +27,7 @@ MCP Math transforms your AI assistant into a powerful mathematical computation e
 
 ### Prerequisites
 
-Before installing MCP Math, ensure you have:
+Before installing MCP Mathematics, ensure you have:
 - Python 3.10 or later installed on your system
 - An MCP-compatible AI assistant (Claude Desktop, VS Code with Continue, or similar)
 
@@ -43,8 +43,8 @@ The fastest way to get started:
 # Install the uv package manager if you haven't already
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# Install and run MCP Math
-uvx mcp-math
+# Install and run MCP Mathematics
+uvx mcp-mathematics
 ```
 
 #### Option 2: Traditional pip Installation
@@ -52,7 +52,7 @@ uvx mcp-math
 For those preferring pip:
 
 ```bash
-pip install mcp-math
+pip install mcp-mathematics
 ```
 
 #### Option 3: Development Installation
@@ -60,8 +60,8 @@ pip install mcp-math
 For contributors or those wanting the latest development version:
 
 ```bash
-git clone https://github.com/SHSharkar/MCP-Math.git
-cd MCP-Math
+git clone https://github.com/SHSharkar/MCP-Mathematics.git
+cd MCP-Mathematics
 pip install -e .
 ```
 
@@ -69,7 +69,7 @@ pip install -e .
 
 ### Configuring Claude Desktop
 
-To enable MCP Math in Claude Desktop, you'll need to modify your configuration file.
+To enable MCP Mathematics in Claude Desktop, you'll need to modify your configuration file.
 
 **Configuration file locations:**
 - macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
@@ -79,9 +79,9 @@ To enable MCP Math in Claude Desktop, you'll need to modify your configuration f
 ```json
 {
   "mcpServers": {
-    "mcp-math": {
+    "mcp-mathematics": {
       "command": "uvx",
-      "args": ["mcp-math"]
+      "args": ["mcp-mathematics"]
     }
   }
 }
@@ -91,9 +91,8 @@ To enable MCP Math in Claude Desktop, you'll need to modify your configuration f
 ```json
 {
   "mcpServers": {
-    "mcp-math": {
-      "command": "python",
-      "args": ["-m", "mcp_math"]
+    "mcp-mathematics": {
+      "command": "mcp-mathematics"
     }
   }
 }
@@ -110,9 +109,9 @@ For VS Code users with the Continue extension:
       "model": "claude-3-5-sonnet",
       "provider": "anthropic",
       "mcpServers": {
-        "mcp-math": {
+        "mcp-mathematics": {
           "command": "uvx",
-          "args": ["mcp-math"]
+          "args": ["mcp-mathematics"]
         }
       }
     }
@@ -122,7 +121,7 @@ For VS Code users with the Continue extension:
 
 ## Available MCP Tools
 
-MCP Math provides five powerful tools for mathematical operations:
+MCP Mathematics provides five powerful tools for mathematical operations:
 
 ### 1. `calculate` - Single Expression Evaluation
 Evaluate any mathematical expression with full function support.
@@ -169,7 +168,7 @@ Pre-configured prompts for common calculation patterns:
 
 ### Basic Operations
 
-MCP Math supports standard mathematical operators with natural alternatives:
+MCP Mathematics supports standard mathematical operators with natural alternatives:
 
 - Addition: `+`
 - Subtraction: `-`
@@ -297,7 +296,7 @@ calculate("2 ^ 10")   # Result: 1024
 
 ### Security-First Design
 
-MCP Math prioritizes security without compromising functionality:
+MCP Mathematics prioritizes security without compromising functionality:
 
 - **AST Evaluation Only**: Every expression is parsed into an Abstract Syntax Tree before evaluation, preventing any form of code injection
 - **Strict Whitelisting**: Only explicitly approved operations and functions can be executed
@@ -351,7 +350,7 @@ python -m build
 
 ## Error Handling
 
-MCP Math provides clear, actionable error messages to help diagnose issues:
+MCP Mathematics provides clear, actionable error messages to help diagnose issues:
 
 - **Syntax Errors**: Clear identification of malformed expressions
 - **Division by Zero**: Graceful handling of mathematical impossibilities
@@ -366,7 +365,7 @@ MCP Math provides clear, actionable error messages to help diagnose issues:
 
 ## License
 
-MCP Math is released under the MIT License. Copyright © 2025 Md. Sazzad Hossain Sharkar
+MCP Mathematics is released under the MIT License. Copyright © 2025 Md. Sazzad Hossain Sharkar
 
 ## Author
 
@@ -385,4 +384,4 @@ We welcome contributions that maintain our high standards for code quality. When
 
 ## Acknowledgments
 
-MCP Math builds upon the Model Context Protocol (MCP) specification developed by Anthropic, extending it with production-ready mathematical capabilities designed for professional deployments.
+MCP Mathematics builds upon the Model Context Protocol (MCP) specification developed by Anthropic, extending it with production-ready mathematical capabilities designed for professional deployments.

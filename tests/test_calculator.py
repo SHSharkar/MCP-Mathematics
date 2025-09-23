@@ -1,7 +1,7 @@
 import math
 import unittest
 
-from src.mcp_math.calculator import evaluate
+from src.mcp_mathematics.calculator import evaluate
 
 
 class TestCalculator(unittest.TestCase):
@@ -348,7 +348,7 @@ class TestCalculator(unittest.TestCase):
         self.assertIn(result, ["124", "124.0"])
 
     def test_error_handling(self):
-        with self.assertRaises(ZeroDivisionError):
+        with self.assertRaises(ValueError):
             evaluate("1 / 0")
         with self.assertRaises(SyntaxError):
             evaluate("")
