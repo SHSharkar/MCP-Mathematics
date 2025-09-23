@@ -1,11 +1,11 @@
 [project]
 name = "mcp-math"
 version = "1.0.0"
-description = "Enterprise-grade Model Context Protocol server for mathematical operations"
+description = "Production-ready Model Context Protocol server for mathematical operations"
 readme = "README.md"
 requires-python = ">=3.10"
 authors = [{ name = "Md. Sazzad Hossain Sharkar", email = "md@szd.sh" }]
-keywords = ["mcp", "model-context-protocol", "mathematical", "scientific-computing", "ai-assistant", "claude", "fastmcp", "ast-evaluation", "secure", "enterprise", "batch-processing", "mathematical-functions", "unicode-operators", "expression-parser"]
+keywords = ["mcp", "model-context-protocol", "mathematical", "scientific-computing", "ai-assistant", "claude", "fastmcp", "ast-evaluation", "secure", "production", "batch-processing", "mathematical-functions", "unicode-operators", "expression-parser"]
 license = { text = "MIT" }
 urls = { Source = "https://github.com/SHSharkar/MCP-Math" }
 classifiers = [

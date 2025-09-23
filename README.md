@@ -1,6 +1,6 @@
 # MCP Math
 
-A powerful Model Context Protocol (MCP) server that brings enterprise-grade mathematical calculations to AI assistants like Claude, featuring secure AST-based evaluation and comprehensive mathematical functions.
+A powerful Model Context Protocol (MCP) server that brings production-ready mathematical calculations to AI assistants like Claude, featuring secure AST-based evaluation and comprehensive mathematical functions.
 
 ## What Is MCP Math?
 
@@ -18,7 +18,7 @@ MCP Math transforms your AI assistant into a powerful mathematical computation e
 - **Unicode Operator Support**: Natural mathematical notation using symbols like ×, ÷, and ^
 - **Full Math Library Coverage**: Complete access to Python's mathematical functions
 
-### Enterprise-Ready Architecture
+### Production-Ready Architecture
 - **Type-Safe Design**: Full type annotations throughout the codebase ensure reliability
 - **Clean Production Code**: No debug statements, console logs, or unnecessary comments
 - **Comprehensive Testing**: 61 unit tests provide thorough coverage of all functionality
@@ -307,7 +307,7 @@ MCP Math prioritizes security without compromising functionality:
 
 ### Production-Grade Code Quality
 
-Built to enterprise standards:
+Built to production standards:
 
 - **Type Safety**: Complete type annotations using Python 3.10+ features
 - **Clean Architecture**: Modular design with clear separation of concerns
@@ -385,4 +385,4 @@ We welcome contributions that maintain our high standards for code quality. When
 
 ## Acknowledgments
 
-MCP Math builds upon the Model Context Protocol (MCP) specification developed by Anthropic, extending it with enterprise-grade mathematical capabilities designed for production deployments.
+MCP Math builds upon the Model Context Protocol (MCP) specification developed by Anthropic, extending it with production-ready mathematical capabilities designed for professional deployments.

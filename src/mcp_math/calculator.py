@@ -734,7 +734,7 @@ What expressions would you like to calculate?"""
 
 def main() -> None:
     if ENABLE_AUDIT_LOGGING:
-        logger.info("Starting MCP Math server with enterprise configuration")
+        logger.info("Starting MCP Math server with production configuration")
         logger.info(f"Available functions: {len(MATH_FUNCTIONS)}")
         logger.info(f"Security limits: expression_length={MAX_EXPRESSION_LENGTH}, depth={MAX_EXPRESSION_DEPTH}")
 
