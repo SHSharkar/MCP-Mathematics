@@ -9,6 +9,11 @@ wheels/
 # Virtual environments
 .venv
 
+# Environment variables and secrets
+.env
+.env.local
+.env.production
+
 # Claude Flow generated files
 .claude/settings.local.json
 .mcp.json
