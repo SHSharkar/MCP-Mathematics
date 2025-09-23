@@ -10,20 +10,20 @@ on:
 
 jobs:
   build-test-validate:
-    name: Build MCP Math Package and Run Unit Tests
+    name: Build MCP Mathematics Package and Run Unit Tests
     runs-on: ubuntu-latest
 
     steps:
     - name: Checkout Repository Code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     - name: Set up Python Environment from Version File
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         python-version-file: .python-version
 
     - name: Install UV Package Manager
-      uses: astral-sh/setup-uv@v3
+      uses: astral-sh/setup-uv@v6
 
     - name: Install Project Dependencies via UV
       run: uv sync
