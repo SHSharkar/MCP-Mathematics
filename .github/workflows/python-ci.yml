@@ -1,0 +1,35 @@
+name: Python CI - Build, Test and Validate
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-test-validate:
+    name: Build MCP Math Package and Run Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository Code
+      uses: actions/checkout@v4
+
+    - name: Set up Python Environment from Version File
+      uses: actions/setup-python@v5
+      with:
+        python-version-file: .python-version
+
+    - name: Install UV Package Manager
+      uses: astral-sh/setup-uv@v3
+
+    - name: Install Project Dependencies via UV
+      run: uv sync
+
+    - name: Build Python Distribution Package
+      run: uv build
+
+    - name: Execute Unit Test Suite
+      run: uv run python -m unittest discover -s tests
