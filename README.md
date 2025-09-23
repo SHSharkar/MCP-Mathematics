@@ -55,6 +55,8 @@ For those preferring pip:
 pip install mcp-mathematics
 ```
 
+📦 **Package Information**: [mcp-mathematics on PyPI](https://pypi.org/project/mcp-mathematics)
+
 #### Option 3: Development Installation
 
 For contributors or those wanting the latest development version:
