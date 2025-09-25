@@ -7,14 +7,13 @@ import operator
 import queue
 import re
 import resource
-import signal
 import statistics
 import threading
 import time
-from collections import deque
+from collections import OrderedDict, deque
 from contextlib import contextmanager
 from dataclasses import dataclass, field
-from threading import RLock
+from threading import RLock, Timer
 from typing import Any
 
 from mcp.server import FastMCP
@@ -57,14 +56,14 @@ _calculation_history_lock = RLock()
 _session_variables_lock = RLock()
 _rate_limiting_lock = RLock()
 
-_rate_limiting_request_history: dict[str, deque] = {}
-_computation_stats: dict[str, dict[str, Any]] = {}
-_expression_cache: dict[str, tuple[str, float]] = {}
-_parsed_expression_ast_cache: dict[str, ast.AST] = {}
-_mathematical_calculation_sessions: dict[str, dict[str, float | complex]] = {}
-
 CACHE_TTL = 300
 MAX_CACHE_SIZE = 1000
+MAX_SESSION_TTL = 3600
+MAX_SESSIONS = 100
+MAX_COMPUTATION_STATS = 500
+SESSION_CLEANUP_INTERVAL = 600
+
+_memory_cleanup_timer = None
 
 mathematical_computation_logger = logging.getLogger(__name__)
 mathematical_security_logger = logging.getLogger(f"{__name__}.security")
@@ -94,6 +93,177 @@ async_mathematical_logger = AsyncLogger(mathematical_computation_logger)
 async_mathematical_security_logger = AsyncLogger(mathematical_security_logger)
 
 
+class LRUCache:
+    def __init__(self, max_size: int = MAX_CACHE_SIZE):
+        self.max_size = max_size
+        self.cache = OrderedDict()
+        self.lock = RLock()
+
+    def get(self, key: str) -> Any:
+        with self.lock:
+            if key not in self.cache:
+                return None
+            self.cache.move_to_end(key)
+            return self.cache[key]
+
+    def set(self, key: str, value: Any) -> None:
+        with self.lock:
+            if key in self.cache:
+                self.cache.move_to_end(key)
+            elif len(self.cache) >= self.max_size:
+                self.cache.popitem(last=False)
+            self.cache[key] = value
+
+    def clear(self) -> None:
+        with self.lock:
+            self.cache.clear()
+
+    def size(self) -> int:
+        with self.lock:
+            return len(self.cache)
+
+
+class TTLCache:
+    def __init__(self, max_size: int = MAX_CACHE_SIZE, ttl: float = CACHE_TTL):
+        self.max_size = max_size
+        self.ttl = ttl
+        self.cache = OrderedDict()
+        self.lock = RLock()
+
+    def get(self, key: str) -> Any:
+        with self.lock:
+            if key not in self.cache:
+                return None
+            value, timestamp = self.cache[key]
+            if time.time() - timestamp > self.ttl:
+                del self.cache[key]
+                return None
+            self.cache.move_to_end(key)
+            return value
+
+    def set(self, key: str, value: Any) -> None:
+        with self.lock:
+            current_time = time.time()
+            if key in self.cache:
+                self.cache.move_to_end(key)
+            elif len(self.cache) >= self.max_size:
+                self.cache.popitem(last=False)
+            self.cache[key] = (value, current_time)
+
+    def cleanup_expired(self) -> int:
+        with self.lock:
+            current_time = time.time()
+            expired_keys = [
+                key
+                for key, (_, timestamp) in self.cache.items()
+                if current_time - timestamp > self.ttl
+            ]
+            for key in expired_keys:
+                del self.cache[key]
+            return len(expired_keys)
+
+    def clear(self) -> None:
+        with self.lock:
+            self.cache.clear()
+
+    def size(self) -> int:
+        with self.lock:
+            return len(self.cache)
+
+
+class SessionManager:
+    def __init__(self, max_sessions: int = MAX_SESSIONS, session_ttl: float = MAX_SESSION_TTL):
+        self.max_sessions = max_sessions
+        self.session_ttl = session_ttl
+        self.sessions = OrderedDict()
+        self.session_timestamps = {}
+        self.lock = RLock()
+        self.cleanup_timer = None
+        self._start_cleanup_timer()
+
+    def create_session(self, session_id: str, variables: dict[str, float | complex] = None) -> None:
+        with self.lock:
+            current_time = time.time()
+            if len(self.sessions) >= self.max_sessions:
+                oldest_session = next(iter(self.sessions))
+                del self.sessions[oldest_session]
+                del self.session_timestamps[oldest_session]
+
+            self.sessions[session_id] = variables or {}
+            self.session_timestamps[session_id] = current_time
+
+    def get_session(self, session_id: str) -> dict[str, float | complex] | None:
+        with self.lock:
+            if session_id not in self.sessions:
+                return None
+            current_time = time.time()
+            if current_time - self.session_timestamps[session_id] > self.session_ttl:
+                del self.sessions[session_id]
+                del self.session_timestamps[session_id]
+                return None
+            self.session_timestamps[session_id] = current_time
+            self.sessions.move_to_end(session_id)
+            return self.sessions[session_id]
+
+    def update_session(self, session_id: str, key: str, value: float | complex) -> bool:
+        with self.lock:
+            session = self.get_session(session_id)
+            if session is None:
+                return False
+            session[key] = value
+            return True
+
+    def delete_session(self, session_id: str) -> bool:
+        with self.lock:
+            if session_id in self.sessions:
+                del self.sessions[session_id]
+                del self.session_timestamps[session_id]
+                return True
+            return False
+
+    def cleanup_expired(self) -> int:
+        with self.lock:
+            current_time = time.time()
+            expired_sessions = [
+                session_id
+                for session_id, timestamp in self.session_timestamps.items()
+                if current_time - timestamp > self.session_ttl
+            ]
+            for session_id in expired_sessions:
+                del self.sessions[session_id]
+                del self.session_timestamps[session_id]
+            return len(expired_sessions)
+
+    def _start_cleanup_timer(self) -> None:
+        def cleanup_task():
+            try:
+                self.cleanup_expired()
+            finally:
+                self._start_cleanup_timer()
+
+        self.cleanup_timer = Timer(SESSION_CLEANUP_INTERVAL, cleanup_task)
+        self.cleanup_timer.daemon = True
+        self.cleanup_timer.start()
+
+    def shutdown(self) -> None:
+        if self.cleanup_timer:
+            self.cleanup_timer.cancel()
+
+    def get_stats(self) -> dict[str, Any]:
+        with self.lock:
+            return {
+                "active_sessions": len(self.sessions),
+                "max_sessions": self.max_sessions,
+                "session_ttl": self.session_ttl,
+            }
+
+
+_expression_cache = TTLCache(MAX_CACHE_SIZE, CACHE_TTL)
+_parsed_expression_ast_cache = LRUCache(MAX_CACHE_SIZE)
+_computation_stats = LRUCache(MAX_COMPUTATION_STATS)
+_session_manager = SessionManager()
+
+
 @dataclass
 class CalculationResult:
     success: bool
@@ -119,29 +289,46 @@ class CalculationResult:
 
 
 class RateLimiter:
-    def __init__(self, max_requests: int, window: int):
+    def __init__(self, max_requests: int, window: int, max_clients: int = 1000):
         self.max_requests = max_requests
         self.window = window
-        self.requests = {}
+        self.max_clients = max_clients
+        self.requests = OrderedDict()
         self.lock = RLock()
 
     def check_rate_limit(self, client_id: str) -> bool:
         current_time = time.time()
         with self.lock:
             if client_id not in self.requests:
+                if len(self.requests) >= self.max_clients:
+                    oldest_client = next(iter(self.requests))
+                    del self.requests[oldest_client]
                 self.requests[client_id] = deque()
 
-            while (
-                self.requests[client_id]
-                and self.requests[client_id][0] < current_time - self.window
-            ):
-                self.requests[client_id].popleft()
+            client_requests = self.requests[client_id]
+            while client_requests and client_requests[0] < current_time - self.window:
+                client_requests.popleft()
 
-            if len(self.requests[client_id]) >= self.max_requests:
+            if len(client_requests) >= self.max_requests:
                 return False
 
-            self.requests[client_id].append(current_time)
+            client_requests.append(current_time)
+            self.requests.move_to_end(client_id)
             return True
+
+    def cleanup_expired(self) -> int:
+        current_time = time.time()
+        with self.lock:
+            expired_clients = []
+            for client_id, client_requests in self.requests.items():
+                while client_requests and client_requests[0] < current_time - self.window:
+                    client_requests.popleft()
+                if not client_requests:
+                    expired_clients.append(client_id)
+
+            for client_id in expired_clients:
+                del self.requests[client_id]
+            return len(expired_clients)
 
 
 mathematical_computation_rate_limiter = RateLimiter(MAX_REQUESTS_PER_WINDOW, RATE_LIMIT_WINDOW)
@@ -149,17 +336,20 @@ mathematical_computation_rate_limiter = RateLimiter(MAX_REQUESTS_PER_WINDOW, RAT
 
 @contextmanager
 def mathematical_computation_timeout(seconds: float):
-    def timeout_handler(signum, frame):
-        del signum, frame
-        raise TimeoutError(f"Computation exceeded {seconds}s limit")
+    timeout_occurred = threading.Event()
 
-    old_handler = signal.signal(signal.SIGALRM, timeout_handler)
-    signal.alarm(int(seconds))
+    def timeout_callback():
+        timeout_occurred.set()
+
+    timer = threading.Timer(seconds, timeout_callback)
+    timer.start()
+
     try:
-        yield
+        yield timeout_occurred
     finally:
-        signal.alarm(0)
-        signal.signal(signal.SIGALRM, old_handler)
+        timer.cancel()
+        if timeout_occurred.is_set():
+            raise TimeoutError(f"Computation exceeded {seconds}s limit")
 
 
 @contextmanager
@@ -724,20 +914,23 @@ def monitor_computation_performance(expression: str, start_time: float, end_time
         computation_time = end_time - start_time
         expression_hash = generate_expression_hash(expression)
 
-        if expression_hash not in _computation_stats:
-            _computation_stats[expression_hash] = {
-                "count": 0,
-                "total_time": 0.0,
-                "max_time": 0.0,
+        existing_stats = _computation_stats.get(expression_hash)
+        if existing_stats is None:
+            stats = {
+                "count": 1,
+                "total_time": computation_time,
+                "max_time": computation_time,
                 "first_seen": start_time,
                 "last_seen": end_time,
             }
+        else:
+            stats = existing_stats.copy()
+            stats["count"] += 1
+            stats["total_time"] += computation_time
+            stats["max_time"] = max(stats["max_time"], computation_time)
+            stats["last_seen"] = end_time
 
-        stats = _computation_stats[expression_hash]
-        stats["count"] += 1
-        stats["total_time"] += computation_time
-        stats["max_time"] = max(stats["max_time"], computation_time)
-        stats["last_seen"] = end_time
+        _computation_stats.set(expression_hash, stats)
 
         if computation_time > MAX_COMPUTATION_TIME:
             async_mathematical_security_logger.log(
@@ -745,60 +938,80 @@ def monitor_computation_performance(expression: str, start_time: float, end_time
             )
 
 
-def cleanup_mathematical_caches() -> None:
-    current_time = time.time()
-    with _expression_cache_lock:
-        expired_keys = [
-            key
-            for key, (_, timestamp) in _expression_cache.items()
-            if current_time - timestamp > CACHE_TTL
-        ]
-        for key in expired_keys:
-            del _expression_cache[key]
+def cleanup_mathematical_caches() -> dict[str, int]:
+    cleanup_stats = {
+        "expression_cache_expired": 0,
+        "sessions_expired": 0,
+        "rate_limiter_expired": 0,
+    }
 
-        if len(_expression_cache) > MAX_CACHE_SIZE:
-            sorted_items = sorted(_expression_cache.items(), key=lambda x: x[1][1])
-            items_to_remove = len(_expression_cache) - MAX_CACHE_SIZE
-            for key, _ in sorted_items[:items_to_remove]:
-                del _expression_cache[key]
+    cleanup_stats["expression_cache_expired"] = _expression_cache.cleanup_expired()
+    cleanup_stats["sessions_expired"] = _session_manager.cleanup_expired()
+    cleanup_stats["rate_limiter_expired"] = mathematical_computation_rate_limiter.cleanup_expired()
 
-        if len(_parsed_expression_ast_cache) > MAX_CACHE_SIZE:
-            keys_to_remove = list(_parsed_expression_ast_cache.keys())[
-                : len(_parsed_expression_ast_cache) // 2
-            ]
-            for key in keys_to_remove:
-                del _parsed_expression_ast_cache[key]
+    return cleanup_stats
+
+
+def start_memory_cleanup_timer() -> None:
+    global _memory_cleanup_timer
+
+    def memory_cleanup_task():
+        try:
+            cleanup_stats = cleanup_mathematical_caches()
+            total_cleaned = sum(cleanup_stats.values())
+            if total_cleaned > 0:
+                async_mathematical_logger.log(logging.INFO, f"Memory cleanup: {cleanup_stats}")
+        except Exception as e:
+            async_mathematical_logger.log(logging.ERROR, f"Memory cleanup error: {e}")
+        finally:
+            start_memory_cleanup_timer()
+
+    _memory_cleanup_timer = Timer(SESSION_CLEANUP_INTERVAL, memory_cleanup_task)
+    _memory_cleanup_timer.daemon = True
+    _memory_cleanup_timer.start()
+
+
+def get_memory_usage_stats() -> dict[str, Any]:
+    import os
+
+    import psutil
+
+    process = psutil.Process(os.getpid())
+    memory_info = process.memory_info()
+
+    return {
+        "process_memory_mb": round(memory_info.rss / 1024 / 1024, 2),
+        "virtual_memory_mb": round(memory_info.vms / 1024 / 1024, 2),
+        "expression_cache_size": _expression_cache.size(),
+        "ast_cache_size": _parsed_expression_ast_cache.size(),
+        "computation_stats_size": _computation_stats.size(),
+        "active_sessions": _session_manager.get_stats()["active_sessions"],
+        "rate_limiter_clients": len(mathematical_computation_rate_limiter.requests),
+        "history_entries": len(mathematical_calculation_history.history),
+    }
+
+
+def shutdown_memory_management() -> None:
+    global _memory_cleanup_timer
+    if _memory_cleanup_timer:
+        _memory_cleanup_timer.cancel()
+    _session_manager.shutdown()
 
 
 def get_cached_result(expression: str) -> str | None:
-    with _expression_cache_lock:
-        if expression not in _expression_cache:
-            return None
-
-        result, timestamp = _expression_cache[expression]
-        if time.time() - timestamp > CACHE_TTL:
-            del _expression_cache[expression]
-            return None
-
-        return result
+    return _expression_cache.get(expression)
 
 
 def store_calculation_result(expression: str, result: str) -> None:
-    with _expression_cache_lock:
-        _expression_cache[expression] = (result, time.time())
-
-        if len(_expression_cache) % 100 == 0:
-            cleanup_mathematical_caches()
+    _expression_cache.set(expression, result)
 
 
 def get_cached_ast(expression: str) -> ast.AST | None:
-    with _expression_cache_lock:
-        return _parsed_expression_ast_cache.get(expression)
+    return _parsed_expression_ast_cache.get(expression)
 
 
 def store_parsed_expression(expression: str, tree: ast.AST) -> None:
-    with _expression_cache_lock:
-        _parsed_expression_ast_cache[expression] = tree
+    _parsed_expression_ast_cache.set(expression, tree)
 
 
 def sanitize_expression(expr: str) -> str:
@@ -957,8 +1170,7 @@ def compute_expression(expression: str, session_id: str | None = None) -> Calcul
 
         session_vars = {}
         if session_id:
-            with _session_variables_lock:
-                session_vars = _mathematical_calculation_sessions.get(session_id, {})
+            session_vars = _session_manager.get_session(session_id) or {}
 
         cached_result = get_cached_result(original_expression)
         if cached_result is not None:
@@ -988,11 +1200,17 @@ def compute_expression(expression: str, session_id: str | None = None) -> Calcul
                 raise ValueError(f"Unsupported mathematical operation detected: {str(e)}")
             raise
 
-        with (
-            mathematical_computation_timeout(COMPUTATION_TIMEOUT),
-            mathematical_computation_memory_limit(MAX_MEMORY_MB),
-        ):
-            result = evaluate_mathematical_node(tree, session_vars)
+        def compute_result(timeout_event=None):
+            with mathematical_computation_memory_limit(MAX_MEMORY_MB):
+                if timeout_event and timeout_event.is_set():
+                    raise TimeoutError(f"Computation exceeded {COMPUTATION_TIMEOUT}s limit")
+                result = evaluate_mathematical_node(tree, session_vars)
+                if timeout_event and timeout_event.is_set():
+                    raise TimeoutError(f"Computation exceeded {COMPUTATION_TIMEOUT}s limit")
+                return result
+
+        with mathematical_computation_timeout(COMPUTATION_TIMEOUT) as timeout_event:
+            result = compute_result(timeout_event)
 
         if isinstance(result, (int, float, complex)) and abs(result) > 10**200:
             result_magnitude = abs(result)
@@ -1195,17 +1413,11 @@ def convert_unit(value: float, from_unit: str, to_unit: str, unit_type: str) -> 
         elif to_unit == "F":
             return (kelvin - 273.15) * 9 / 5 + 32
     elif unit_type == "fuel_economy":
-        if from_unit == "mpg" and to_unit == "L/100km":
+        if from_unit == "mpg" and to_unit == "L/100km" or from_unit == "L/100km" and to_unit == "mpg":
             return 235.215 / value
-        elif from_unit == "L/100km" and to_unit == "mpg":
-            return 235.215 / value
-        elif from_unit == "mpg_uk" and to_unit == "L/100km":
+        elif from_unit == "mpg_uk" and to_unit == "L/100km" or from_unit == "L/100km" and to_unit == "mpg_uk":
             return 282.481 / value
-        elif from_unit == "L/100km" and to_unit == "mpg_uk":
-            return 282.481 / value
-        elif from_unit == "km/L" and to_unit == "L/100km":
-            return 100.0 / value
-        elif from_unit == "L/100km" and to_unit == "km/L":
+        elif from_unit == "km/L" and to_unit == "L/100km" or from_unit == "L/100km" and to_unit == "km/L":
             return 100.0 / value
         elif from_unit == "mpg" and to_unit == "mpg_uk":
             return value / 1.20095
@@ -1461,19 +1673,24 @@ _shutdown_requested = False
 _active_mathematical_computations = 0
 
 
-def signal_handler(signum: int, frame: Any) -> None:
-    del frame
+def setup_graceful_shutdown():
     global _shutdown_requested
-    _shutdown_requested = True
 
-    signal_name = signal.Signals(signum).name
-    async_mathematical_logger.log(
-        logging.INFO, f"Received {signal_name} signal, initiating graceful shutdown"
-    )
+    def shutdown_handler(signum, frame):
+        del frame
+        _shutdown_requested = True
+        async_mathematical_logger.log(
+            logging.INFO, f"Received shutdown signal {signum}, initiating graceful shutdown"
+        )
 
+    import signal
 
-signal.signal(signal.SIGTERM, signal_handler)
-signal.signal(signal.SIGINT, signal_handler)
+    try:
+        signal.signal(signal.SIGTERM, shutdown_handler)
+        signal.signal(signal.SIGINT, shutdown_handler)
+    except (OSError, ValueError):
+        pass
+
 
 mcp = FastMCP("MCP Math")
 
@@ -1484,8 +1701,20 @@ async def get_system_metrics() -> str:
     metrics.append("=" * 40)
 
     with _computation_metrics_lock:
-        total_computations = sum(stats["count"] for stats in _computation_stats.values())
-        total_time = sum(stats["total_time"] for stats in _computation_stats.values())
+        stats_values = []
+        for i in range(_computation_stats.size()):
+            key = (
+                list(_computation_stats.cache.keys())[i]
+                if i < len(_computation_stats.cache)
+                else None
+            )
+            if key:
+                stat = _computation_stats.get(key)
+                if stat:
+                    stats_values.append(stat)
+
+        total_computations = sum(stats["count"] for stats in stats_values)
+        total_time = sum(stats["total_time"] for stats in stats_values)
         avg_time = total_time / total_computations if total_computations > 0 else 0
 
     metrics.append(f"Total Computations: {total_computations}")
@@ -1504,17 +1733,15 @@ async def get_system_metrics() -> str:
     history_size = len(mathematical_calculation_history.history)
     metrics.append(f"History Entries: {history_size}/{MAX_HISTORY_SIZE}")
 
-    with _expression_cache_lock:
-        cache_size = len(_expression_cache)
-        ast_cache_size = len(_parsed_expression_ast_cache)
-
+    cache_size = _expression_cache.size()
+    ast_cache_size = _parsed_expression_ast_cache.size()
     metrics.append(f"Expression Cache: {cache_size}/{MAX_CACHE_SIZE}")
     metrics.append(f"AST Cache: {ast_cache_size}/{MAX_CACHE_SIZE}")
 
-    with _session_variables_lock:
-        session_count = len(_mathematical_calculation_sessions)
-
-    metrics.append(f"Active Sessions: {session_count}")
+    session_stats = _session_manager.get_stats()
+    metrics.append(
+        f"Active Sessions: {session_stats['active_sessions']}/{session_stats['max_sessions']}"
+    )
 
     metrics.append(f"Security Monitoring: {'Enabled' if ENABLE_AUDIT_LOGGING else 'Disabled'}")
     metrics.append(f"Rate Limiting: {'Enabled' if ENABLE_RATE_LIMITING else 'Disabled'}")
@@ -1563,6 +1790,32 @@ async def get_security_status() -> str:
     security_info.append(f"  Max List Size: {MAX_LIST_SIZE}")
 
     return "\\n".join(security_info)
+
+
+@mcp.tool()
+async def get_memory_usage() -> str:
+    try:
+        stats = get_memory_usage_stats()
+        lines = ["MCP Math Memory Usage:"]
+        lines.append("=" * 30)
+        lines.append(f"Process Memory: {stats['process_memory_mb']} MB")
+        lines.append(f"Virtual Memory: {stats['virtual_memory_mb']} MB")
+        lines.append("\\nCache Usage:")
+        lines.append(f"  Expression Cache: {stats['expression_cache_size']}/{MAX_CACHE_SIZE}")
+        lines.append(f"  AST Cache: {stats['ast_cache_size']}/{MAX_CACHE_SIZE}")
+        lines.append(
+            f"  Computation Stats: {stats['computation_stats_size']}/{MAX_COMPUTATION_STATS}"
+        )
+        lines.append("\\nSession Management:")
+        lines.append(f"  Active Sessions: {stats['active_sessions']}/{MAX_SESSIONS}")
+        lines.append("\\nOther Components:")
+        lines.append(f"  Rate Limiter Clients: {stats['rate_limiter_clients']}")
+        lines.append(f"  History Entries: {stats['history_entries']}/{MAX_HISTORY_SIZE}")
+        return "\\n".join(lines)
+    except ImportError:
+        return "Error: psutil package required for memory monitoring"
+    except Exception as e:
+        return f"Error getting memory usage: {str(e)}"
 
 
 @mcp.tool()
@@ -1682,9 +1935,7 @@ async def create_session(
         if not session_id:
             session_id = f"session_{int(time.time() * 1000)}"
 
-        with _session_variables_lock:
-            _mathematical_calculation_sessions[session_id] = variables or {}
-
+        _session_manager.create_session(session_id, variables)
         return f"Session created: {session_id}"
     except Exception as e:
         return f"Error: {str(e)}"
@@ -1703,10 +1954,7 @@ async def calculate_in_session(session_id: str, expression: str, save_as: str | 
         result = compute_expression(expression, session_id)
 
         if result.success and save_as:
-            with _session_variables_lock:
-                if session_id not in _mathematical_calculation_sessions:
-                    _mathematical_calculation_sessions[session_id] = {}
-                _mathematical_calculation_sessions[session_id][save_as] = result.result
+            _session_manager.update_session(session_id, save_as, result.result)
 
         return result.to_string()
     except Exception as e:
@@ -1717,28 +1965,25 @@ async def calculate_in_session(session_id: str, expression: str, save_as: str | 
 
 @mcp.tool()
 async def list_session_variables(session_id: str) -> str:
-    with _session_variables_lock:
-        if session_id not in _mathematical_calculation_sessions:
-            return f"Error: Session {session_id} not found"
+    variables = _session_manager.get_session(session_id)
+    if variables is None:
+        return f"Error: Session {session_id} not found"
 
-        variables = _mathematical_calculation_sessions[session_id]
-        if not variables:
-            return "No variables in session"
+    if not variables:
+        return "No variables in session"
 
-        lines = ["Session Variables:"]
-        for name, value in variables.items():
-            lines.append(f"  {name} = {value}")
+    lines = ["Session Variables:"]
+    for name, value in variables.items():
+        lines.append(f"  {name} = {value}")
 
-        return "\\n".join(lines)
+    return "\\n".join(lines)
 
 
 @mcp.tool()
 async def delete_session(session_id: str) -> str:
-    with _session_variables_lock:
-        if session_id in _mathematical_calculation_sessions:
-            del _mathematical_calculation_sessions[session_id]
-            return f"Session {session_id} deleted"
-        return f"Session {session_id} not found"
+    if _session_manager.delete_session(session_id):
+        return f"Session {session_id} deleted"
+    return f"Session {session_id} not found"
 
 
 @mcp.tool()
@@ -1760,6 +2005,21 @@ async def get_calculation_history(limit: int = 10) -> str:
 async def clear_history() -> str:
     mathematical_calculation_history.clear()
     return "Calculation history cleared successfully"
+
+
+@mcp.tool()
+async def cleanup_memory() -> str:
+    try:
+        cleanup_stats = cleanup_mathematical_caches()
+        lines = ["Memory Cleanup Results:"]
+        lines.append(f"Expression cache expired: {cleanup_stats['expression_cache_expired']}")
+        lines.append(f"Sessions expired: {cleanup_stats['sessions_expired']}")
+        lines.append(f"Rate limiter expired: {cleanup_stats['rate_limiter_expired']}")
+        total_cleaned = sum(cleanup_stats.values())
+        lines.append(f"Total items cleaned: {total_cleaned}")
+        return "\\n".join(lines)
+    except Exception as e:
+        return f"Error during cleanup: {str(e)}"
 
 
 @mcp.tool()
@@ -1899,11 +2159,20 @@ What expressions would you like to calculate?"""
 
 
 def main() -> None:
+    setup_graceful_shutdown()
+    start_memory_cleanup_timer()
+
     if ENABLE_AUDIT_LOGGING:
-        async_mathematical_logger.log(logging.INFO, "Starting Enhanced MCP Math server")
+        async_mathematical_logger.log(
+            logging.INFO, "Starting Enhanced MCP Math server with memory management"
+        )
         async_mathematical_logger.log(logging.INFO, f"Available functions: {len(ALL_FUNCTIONS)}")
         async_mathematical_logger.log(
             logging.INFO, f"Security: timeout={COMPUTATION_TIMEOUT}s, memory={MAX_MEMORY_MB}MB"
+        )
+        async_mathematical_logger.log(
+            logging.INFO,
+            f"Memory: max_cache={MAX_CACHE_SIZE}, max_sessions={MAX_SESSIONS}, cleanup_interval={SESSION_CLEANUP_INTERVAL}s",
         )
 
     try:
@@ -1914,6 +2183,8 @@ def main() -> None:
                 logging.CRITICAL, f"Failed to start MCP Math server: {str(e)}"
             )
         raise
+    finally:
+        shutdown_memory_management()
 
 
 if __name__ == "__main__":
