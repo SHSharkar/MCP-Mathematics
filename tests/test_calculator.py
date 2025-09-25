@@ -1,532 +1,532 @@
 import math
 import unittest
 
-from src.mcp_mathematics.calculator import evaluate_mathematical_expression
+from src.mcp_mathematics.calculator import execute_mathematical_computation
 
 
 class TestCalculator(unittest.TestCase):
     def test_sin(self):
-        self.assertAlmostEqual(float(evaluate_mathematical_expression("sin(0)")), 0.0, places=7)
-        self.assertAlmostEqual(float(evaluate_mathematical_expression("sin(pi/2)")), 1.0, places=7)
-        self.assertAlmostEqual(float(evaluate_mathematical_expression("sin(pi)")), 0.0, places=7)
+        self.assertAlmostEqual(float(execute_mathematical_computation("sin(0)")), 0.0, places=7)
+        self.assertAlmostEqual(float(execute_mathematical_computation("sin(pi/2)")), 1.0, places=7)
+        self.assertAlmostEqual(float(execute_mathematical_computation("sin(pi)")), 0.0, places=7)
 
     def test_cos(self):
-        self.assertAlmostEqual(float(evaluate_mathematical_expression("cos(0)")), 1.0, places=7)
-        self.assertAlmostEqual(float(evaluate_mathematical_expression("cos(pi/2)")), 0.0, places=7)
-        self.assertAlmostEqual(float(evaluate_mathematical_expression("cos(pi)")), -1.0, places=7)
+        self.assertAlmostEqual(float(execute_mathematical_computation("cos(0)")), 1.0, places=7)
+        self.assertAlmostEqual(float(execute_mathematical_computation("cos(pi/2)")), 0.0, places=7)
+        self.assertAlmostEqual(float(execute_mathematical_computation("cos(pi)")), -1.0, places=7)
 
     def test_tan(self):
-        self.assertAlmostEqual(float(evaluate_mathematical_expression("tan(0)")), 0.0, places=7)
-        self.assertAlmostEqual(float(evaluate_mathematical_expression("tan(pi/4)")), 1.0, places=7)
+        self.assertAlmostEqual(float(execute_mathematical_computation("tan(0)")), 0.0, places=7)
+        self.assertAlmostEqual(float(execute_mathematical_computation("tan(pi/4)")), 1.0, places=7)
         self.assertAlmostEqual(
-            float(evaluate_mathematical_expression("tan(-pi/4)")), -1.0, places=7
+            float(execute_mathematical_computation("tan(-pi/4)")), -1.0, places=7
         )
 
     def test_asin(self):
-        self.assertAlmostEqual(float(evaluate_mathematical_expression("asin(0)")), 0.0, places=7)
+        self.assertAlmostEqual(float(execute_mathematical_computation("asin(0)")), 0.0, places=7)
         self.assertAlmostEqual(
-            float(evaluate_mathematical_expression("asin(1)")), math.pi / 2, places=7
+            float(execute_mathematical_computation("asin(1)")), math.pi / 2, places=7
         )
         self.assertAlmostEqual(
-            float(evaluate_mathematical_expression("asin(0.5)")), math.pi / 6, places=7
+            float(execute_mathematical_computation("asin(0.5)")), math.pi / 6, places=7
         )
 
     def test_acos(self):
-        self.assertAlmostEqual(float(evaluate_mathematical_expression("acos(1)")), 0.0, places=7)
+        self.assertAlmostEqual(float(execute_mathematical_computation("acos(1)")), 0.0, places=7)
         self.assertAlmostEqual(
-            float(evaluate_mathematical_expression("acos(0)")), math.pi / 2, places=7
+            float(execute_mathematical_computation("acos(0)")), math.pi / 2, places=7
         )
         self.assertAlmostEqual(
-            float(evaluate_mathematical_expression("acos(-1)")), math.pi, places=7
+            float(execute_mathematical_computation("acos(-1)")), math.pi, places=7
         )
 
     def test_atan(self):
-        self.assertAlmostEqual(float(evaluate_mathematical_expression("atan(0)")), 0.0, places=7)
+        self.assertAlmostEqual(float(execute_mathematical_computation("atan(0)")), 0.0, places=7)
         self.assertAlmostEqual(
-            float(evaluate_mathematical_expression("atan(1)")), math.pi / 4, places=7
+            float(execute_mathematical_computation("atan(1)")), math.pi / 4, places=7
         )
         self.assertAlmostEqual(
-            float(evaluate_mathematical_expression("atan(-1)")), -math.pi / 4, places=7
+            float(execute_mathematical_computation("atan(-1)")), -math.pi / 4, places=7
         )
 
     def test_atan2(self):
         self.assertAlmostEqual(
-            float(evaluate_mathematical_expression("atan2(0, 1)")), 0.0, places=7
+            float(execute_mathematical_computation("atan2(0, 1)")), 0.0, places=7
         )
         self.assertAlmostEqual(
-            float(evaluate_mathematical_expression("atan2(1, 0)")), math.pi / 2, places=7
+            float(execute_mathematical_computation("atan2(1, 0)")), math.pi / 2, places=7
         )
         self.assertAlmostEqual(
-            float(evaluate_mathematical_expression("atan2(1, 1)")), math.pi / 4, places=7
+            float(execute_mathematical_computation("atan2(1, 1)")), math.pi / 4, places=7
         )
 
     def test_sinh(self):
-        self.assertAlmostEqual(float(evaluate_mathematical_expression("sinh(0)")), 0.0, places=7)
+        self.assertAlmostEqual(float(execute_mathematical_computation("sinh(0)")), 0.0, places=7)
         self.assertAlmostEqual(
-            float(evaluate_mathematical_expression("sinh(1)")), math.sinh(1), places=7
+            float(execute_mathematical_computation("sinh(1)")), math.sinh(1), places=7
         )
         self.assertAlmostEqual(
-            float(evaluate_mathematical_expression("sinh(-1)")), math.sinh(-1), places=7
+            float(execute_mathematical_computation("sinh(-1)")), math.sinh(-1), places=7
         )
 
     def test_cosh(self):
-        self.assertAlmostEqual(float(evaluate_mathematical_expression("cosh(0)")), 1.0, places=7)
+        self.assertAlmostEqual(float(execute_mathematical_computation("cosh(0)")), 1.0, places=7)
         self.assertAlmostEqual(
-            float(evaluate_mathematical_expression("cosh(1)")), math.cosh(1), places=7
+            float(execute_mathematical_computation("cosh(1)")), math.cosh(1), places=7
         )
         self.assertAlmostEqual(
-            float(evaluate_mathematical_expression("cosh(-1)")), math.cosh(-1), places=7
+            float(execute_mathematical_computation("cosh(-1)")), math.cosh(-1), places=7
         )
 
     def test_tanh(self):
-        self.assertAlmostEqual(float(evaluate_mathematical_expression("tanh(0)")), 0.0, places=7)
+        self.assertAlmostEqual(float(execute_mathematical_computation("tanh(0)")), 0.0, places=7)
         self.assertAlmostEqual(
-            float(evaluate_mathematical_expression("tanh(1)")), math.tanh(1), places=7
+            float(execute_mathematical_computation("tanh(1)")), math.tanh(1), places=7
         )
-        self.assertAlmostEqual(float(evaluate_mathematical_expression("tanh(100)")), 1.0, places=7)
+        self.assertAlmostEqual(float(execute_mathematical_computation("tanh(100)")), 1.0, places=7)
 
     def test_asinh(self):
-        self.assertAlmostEqual(float(evaluate_mathematical_expression("asinh(0)")), 0.0, places=7)
+        self.assertAlmostEqual(float(execute_mathematical_computation("asinh(0)")), 0.0, places=7)
         self.assertAlmostEqual(
-            float(evaluate_mathematical_expression("asinh(1)")), math.asinh(1), places=7
+            float(execute_mathematical_computation("asinh(1)")), math.asinh(1), places=7
         )
         self.assertAlmostEqual(
-            float(evaluate_mathematical_expression("asinh(-1)")), math.asinh(-1), places=7
+            float(execute_mathematical_computation("asinh(-1)")), math.asinh(-1), places=7
         )
 
     def test_acosh(self):
-        self.assertAlmostEqual(float(evaluate_mathematical_expression("acosh(1)")), 0.0, places=7)
+        self.assertAlmostEqual(float(execute_mathematical_computation("acosh(1)")), 0.0, places=7)
         self.assertAlmostEqual(
-            float(evaluate_mathematical_expression("acosh(2)")), math.acosh(2), places=7
+            float(execute_mathematical_computation("acosh(2)")), math.acosh(2), places=7
         )
         self.assertAlmostEqual(
-            float(evaluate_mathematical_expression("acosh(10)")), math.acosh(10), places=7
+            float(execute_mathematical_computation("acosh(10)")), math.acosh(10), places=7
         )
 
     def test_atanh(self):
-        self.assertAlmostEqual(float(evaluate_mathematical_expression("atanh(0)")), 0.0, places=7)
+        self.assertAlmostEqual(float(execute_mathematical_computation("atanh(0)")), 0.0, places=7)
         self.assertAlmostEqual(
-            float(evaluate_mathematical_expression("atanh(0.5)")), math.atanh(0.5), places=7
+            float(execute_mathematical_computation("atanh(0.5)")), math.atanh(0.5), places=7
         )
         self.assertAlmostEqual(
-            float(evaluate_mathematical_expression("atanh(-0.5)")), math.atanh(-0.5), places=7
+            float(execute_mathematical_computation("atanh(-0.5)")), math.atanh(-0.5), places=7
         )
 
     def test_log(self):
-        self.assertAlmostEqual(float(evaluate_mathematical_expression("log(1)")), 0.0, places=7)
-        self.assertAlmostEqual(float(evaluate_mathematical_expression("log(e)")), 1.0, places=7)
+        self.assertAlmostEqual(float(execute_mathematical_computation("log(1)")), 0.0, places=7)
+        self.assertAlmostEqual(float(execute_mathematical_computation("log(e)")), 1.0, places=7)
         self.assertAlmostEqual(
-            float(evaluate_mathematical_expression("log(10)")), math.log(10), places=7
+            float(execute_mathematical_computation("log(10)")), math.log(10), places=7
         )
 
     def test_log10(self):
-        self.assertAlmostEqual(float(evaluate_mathematical_expression("log10(1)")), 0.0, places=7)
-        self.assertAlmostEqual(float(evaluate_mathematical_expression("log10(10)")), 1.0, places=7)
-        self.assertAlmostEqual(float(evaluate_mathematical_expression("log10(100)")), 2.0, places=7)
+        self.assertAlmostEqual(float(execute_mathematical_computation("log10(1)")), 0.0, places=7)
+        self.assertAlmostEqual(float(execute_mathematical_computation("log10(10)")), 1.0, places=7)
+        self.assertAlmostEqual(float(execute_mathematical_computation("log10(100)")), 2.0, places=7)
 
     def test_log2(self):
-        self.assertAlmostEqual(float(evaluate_mathematical_expression("log2(1)")), 0.0, places=7)
-        self.assertAlmostEqual(float(evaluate_mathematical_expression("log2(2)")), 1.0, places=7)
-        self.assertAlmostEqual(float(evaluate_mathematical_expression("log2(8)")), 3.0, places=7)
+        self.assertAlmostEqual(float(execute_mathematical_computation("log2(1)")), 0.0, places=7)
+        self.assertAlmostEqual(float(execute_mathematical_computation("log2(2)")), 1.0, places=7)
+        self.assertAlmostEqual(float(execute_mathematical_computation("log2(8)")), 3.0, places=7)
 
     def test_log1p(self):
-        self.assertAlmostEqual(float(evaluate_mathematical_expression("log1p(0)")), 0.0, places=7)
+        self.assertAlmostEqual(float(execute_mathematical_computation("log1p(0)")), 0.0, places=7)
         self.assertAlmostEqual(
-            float(evaluate_mathematical_expression("log1p(1)")), math.log(2), places=7
+            float(execute_mathematical_computation("log1p(1)")), math.log(2), places=7
         )
-        self.assertAlmostEqual(float(evaluate_mathematical_expression("log1p(e-1)")), 1.0, places=7)
+        self.assertAlmostEqual(float(execute_mathematical_computation("log1p(e-1)")), 1.0, places=7)
 
     def test_exp(self):
-        self.assertAlmostEqual(float(evaluate_mathematical_expression("exp(0)")), 1.0, places=7)
-        self.assertAlmostEqual(float(evaluate_mathematical_expression("exp(1)")), math.e, places=7)
+        self.assertAlmostEqual(float(execute_mathematical_computation("exp(0)")), 1.0, places=7)
+        self.assertAlmostEqual(float(execute_mathematical_computation("exp(1)")), math.e, places=7)
         self.assertAlmostEqual(
-            float(evaluate_mathematical_expression("exp(2)")), math.exp(2), places=7
+            float(execute_mathematical_computation("exp(2)")), math.exp(2), places=7
         )
 
     def test_exp2(self):
         try:
             self.assertAlmostEqual(
-                float(evaluate_mathematical_expression("exp2(0)")), 1.0, places=7
+                float(execute_mathematical_computation("exp2(0)")), 1.0, places=7
             )
             self.assertAlmostEqual(
-                float(evaluate_mathematical_expression("exp2(1)")), 2.0, places=7
+                float(execute_mathematical_computation("exp2(1)")), 2.0, places=7
             )
             self.assertAlmostEqual(
-                float(evaluate_mathematical_expression("exp2(3)")), 8.0, places=7
+                float(execute_mathematical_computation("exp2(3)")), 8.0, places=7
             )
         except Exception:
             self.skipTest("exp2 not available in this Python version")
 
     def test_expm1(self):
-        self.assertAlmostEqual(float(evaluate_mathematical_expression("expm1(0)")), 0.0, places=7)
+        self.assertAlmostEqual(float(execute_mathematical_computation("expm1(0)")), 0.0, places=7)
         self.assertAlmostEqual(
-            float(evaluate_mathematical_expression("expm1(1)")), math.e - 1, places=7
+            float(execute_mathematical_computation("expm1(1)")), math.e - 1, places=7
         )
         self.assertAlmostEqual(
-            float(evaluate_mathematical_expression("expm1(-1)")), math.expm1(-1), places=7
+            float(execute_mathematical_computation("expm1(-1)")), math.expm1(-1), places=7
         )
 
     def test_sqrt(self):
-        self.assertAlmostEqual(float(evaluate_mathematical_expression("sqrt(0)")), 0.0, places=7)
-        self.assertAlmostEqual(float(evaluate_mathematical_expression("sqrt(4)")), 2.0, places=7)
-        self.assertAlmostEqual(float(evaluate_mathematical_expression("sqrt(9)")), 3.0, places=7)
+        self.assertAlmostEqual(float(execute_mathematical_computation("sqrt(0)")), 0.0, places=7)
+        self.assertAlmostEqual(float(execute_mathematical_computation("sqrt(4)")), 2.0, places=7)
+        self.assertAlmostEqual(float(execute_mathematical_computation("sqrt(9)")), 3.0, places=7)
 
     def test_cbrt(self):
         try:
             self.assertAlmostEqual(
-                float(evaluate_mathematical_expression("cbrt(0)")), 0.0, places=7
+                float(execute_mathematical_computation("cbrt(0)")), 0.0, places=7
             )
             self.assertAlmostEqual(
-                float(evaluate_mathematical_expression("cbrt(8)")), 2.0, places=7
+                float(execute_mathematical_computation("cbrt(8)")), 2.0, places=7
             )
             self.assertAlmostEqual(
-                float(evaluate_mathematical_expression("cbrt(27)")), 3.0, places=7
+                float(execute_mathematical_computation("cbrt(27)")), 3.0, places=7
             )
         except Exception:
             self.skipTest("cbrt not available in this Python version")
 
     def test_pow(self):
-        self.assertAlmostEqual(float(evaluate_mathematical_expression("pow(2, 0)")), 1.0, places=7)
-        self.assertAlmostEqual(float(evaluate_mathematical_expression("pow(2, 3)")), 8.0, places=7)
-        self.assertAlmostEqual(float(evaluate_mathematical_expression("pow(5, 2)")), 25.0, places=7)
+        self.assertAlmostEqual(float(execute_mathematical_computation("pow(2, 0)")), 1.0, places=7)
+        self.assertAlmostEqual(float(execute_mathematical_computation("pow(2, 3)")), 8.0, places=7)
+        self.assertAlmostEqual(float(execute_mathematical_computation("pow(5, 2)")), 25.0, places=7)
 
     def test_hypot(self):
         self.assertAlmostEqual(
-            float(evaluate_mathematical_expression("hypot(3, 4)")), 5.0, places=7
+            float(execute_mathematical_computation("hypot(3, 4)")), 5.0, places=7
         )
         self.assertAlmostEqual(
-            float(evaluate_mathematical_expression("hypot(5, 12)")), 13.0, places=7
+            float(execute_mathematical_computation("hypot(5, 12)")), 13.0, places=7
         )
         self.assertAlmostEqual(
-            float(evaluate_mathematical_expression("hypot(0, 0)")), 0.0, places=7
+            float(execute_mathematical_computation("hypot(0, 0)")), 0.0, places=7
         )
 
     def test_fabs(self):
-        self.assertAlmostEqual(float(evaluate_mathematical_expression("fabs(0)")), 0.0, places=7)
-        self.assertAlmostEqual(float(evaluate_mathematical_expression("fabs(-5)")), 5.0, places=7)
+        self.assertAlmostEqual(float(execute_mathematical_computation("fabs(0)")), 0.0, places=7)
+        self.assertAlmostEqual(float(execute_mathematical_computation("fabs(-5)")), 5.0, places=7)
         self.assertAlmostEqual(
-            float(evaluate_mathematical_expression("fabs(3.14)")), 3.14, places=7
+            float(execute_mathematical_computation("fabs(3.14)")), 3.14, places=7
         )
 
     def test_copysign(self):
         self.assertAlmostEqual(
-            float(evaluate_mathematical_expression("copysign(1, -1)")), -1.0, places=7
+            float(execute_mathematical_computation("copysign(1, -1)")), -1.0, places=7
         )
         self.assertAlmostEqual(
-            float(evaluate_mathematical_expression("copysign(-5, 1)")), 5.0, places=7
+            float(execute_mathematical_computation("copysign(-5, 1)")), 5.0, places=7
         )
         self.assertAlmostEqual(
-            float(evaluate_mathematical_expression("copysign(3.14, -1)")), -3.14, places=7
+            float(execute_mathematical_computation("copysign(3.14, -1)")), -3.14, places=7
         )
 
     def test_factorial(self):
-        self.assertEqual(evaluate_mathematical_expression("factorial(0)"), "1")
-        self.assertEqual(evaluate_mathematical_expression("factorial(5)"), "120")
-        self.assertEqual(evaluate_mathematical_expression("factorial(10)"), "3628800")
+        self.assertEqual(execute_mathematical_computation("factorial(0)"), "1")
+        self.assertEqual(execute_mathematical_computation("factorial(5)"), "120")
+        self.assertEqual(execute_mathematical_computation("factorial(10)"), "3628800")
 
     def test_ceil(self):
-        self.assertEqual(evaluate_mathematical_expression("ceil(1.1)"), "2")
-        self.assertEqual(evaluate_mathematical_expression("ceil(2.9)"), "3")
-        self.assertEqual(evaluate_mathematical_expression("ceil(-1.1)"), "-1")
+        self.assertEqual(execute_mathematical_computation("ceil(1.1)"), "2")
+        self.assertEqual(execute_mathematical_computation("ceil(2.9)"), "3")
+        self.assertEqual(execute_mathematical_computation("ceil(-1.1)"), "-1")
 
     def test_floor(self):
-        self.assertEqual(evaluate_mathematical_expression("floor(1.9)"), "1")
-        self.assertEqual(evaluate_mathematical_expression("floor(2.1)"), "2")
-        self.assertEqual(evaluate_mathematical_expression("floor(-1.1)"), "-2")
+        self.assertEqual(execute_mathematical_computation("floor(1.9)"), "1")
+        self.assertEqual(execute_mathematical_computation("floor(2.1)"), "2")
+        self.assertEqual(execute_mathematical_computation("floor(-1.1)"), "-2")
 
     def test_trunc(self):
-        self.assertEqual(evaluate_mathematical_expression("trunc(1.9)"), "1")
-        self.assertEqual(evaluate_mathematical_expression("trunc(-1.9)"), "-1")
-        self.assertEqual(evaluate_mathematical_expression("trunc(3.5)"), "3")
+        self.assertEqual(execute_mathematical_computation("trunc(1.9)"), "1")
+        self.assertEqual(execute_mathematical_computation("trunc(-1.9)"), "-1")
+        self.assertEqual(execute_mathematical_computation("trunc(3.5)"), "3")
 
     def test_degrees(self):
-        self.assertAlmostEqual(float(evaluate_mathematical_expression("degrees(0)")), 0.0, places=7)
+        self.assertAlmostEqual(float(execute_mathematical_computation("degrees(0)")), 0.0, places=7)
         self.assertAlmostEqual(
-            float(evaluate_mathematical_expression("degrees(pi)")), 180.0, places=7
+            float(execute_mathematical_computation("degrees(pi)")), 180.0, places=7
         )
         self.assertAlmostEqual(
-            float(evaluate_mathematical_expression("degrees(pi/2)")), 90.0, places=7
+            float(execute_mathematical_computation("degrees(pi/2)")), 90.0, places=7
         )
 
     def test_radians(self):
-        self.assertAlmostEqual(float(evaluate_mathematical_expression("radians(0)")), 0.0, places=7)
+        self.assertAlmostEqual(float(execute_mathematical_computation("radians(0)")), 0.0, places=7)
         self.assertAlmostEqual(
-            float(evaluate_mathematical_expression("radians(180)")), math.pi, places=7
+            float(execute_mathematical_computation("radians(180)")), math.pi, places=7
         )
         self.assertAlmostEqual(
-            float(evaluate_mathematical_expression("radians(90)")), math.pi / 2, places=7
+            float(execute_mathematical_computation("radians(90)")), math.pi / 2, places=7
         )
 
     def test_gcd(self):
-        self.assertEqual(evaluate_mathematical_expression("gcd(12, 8)"), "4")
-        self.assertEqual(evaluate_mathematical_expression("gcd(15, 25)"), "5")
-        self.assertEqual(evaluate_mathematical_expression("gcd(17, 19)"), "1")
+        self.assertEqual(execute_mathematical_computation("gcd(12, 8)"), "4")
+        self.assertEqual(execute_mathematical_computation("gcd(15, 25)"), "5")
+        self.assertEqual(execute_mathematical_computation("gcd(17, 19)"), "1")
 
     def test_lcm(self):
         try:
-            self.assertEqual(evaluate_mathematical_expression("lcm(4, 6)"), "12")
-            self.assertEqual(evaluate_mathematical_expression("lcm(3, 5)"), "15")
-            self.assertEqual(evaluate_mathematical_expression("lcm(12, 18)"), "36")
+            self.assertEqual(execute_mathematical_computation("lcm(4, 6)"), "12")
+            self.assertEqual(execute_mathematical_computation("lcm(3, 5)"), "15")
+            self.assertEqual(execute_mathematical_computation("lcm(12, 18)"), "36")
         except Exception:
             self.skipTest("lcm not available in this Python version")
 
     def test_isqrt(self):
         try:
-            self.assertEqual(evaluate_mathematical_expression("isqrt(0)"), "0")
-            self.assertEqual(evaluate_mathematical_expression("isqrt(4)"), "2")
-            self.assertEqual(evaluate_mathematical_expression("isqrt(10)"), "3")
+            self.assertEqual(execute_mathematical_computation("isqrt(0)"), "0")
+            self.assertEqual(execute_mathematical_computation("isqrt(4)"), "2")
+            self.assertEqual(execute_mathematical_computation("isqrt(10)"), "3")
         except Exception:
             self.skipTest("isqrt not available in this Python version")
 
     def test_fmod(self):
         self.assertAlmostEqual(
-            float(evaluate_mathematical_expression("fmod(10, 3)")), 1.0, places=7
+            float(execute_mathematical_computation("fmod(10, 3)")), 1.0, places=7
         )
         self.assertAlmostEqual(
-            float(evaluate_mathematical_expression("fmod(5.5, 2.5)")), 0.5, places=7
+            float(execute_mathematical_computation("fmod(5.5, 2.5)")), 0.5, places=7
         )
         self.assertAlmostEqual(
-            float(evaluate_mathematical_expression("fmod(-10, 3)")), -1.0, places=7
+            float(execute_mathematical_computation("fmod(-10, 3)")), -1.0, places=7
         )
 
     def test_remainder(self):
         self.assertAlmostEqual(
-            float(evaluate_mathematical_expression("remainder(10, 3)")), 1.0, places=7
+            float(execute_mathematical_computation("remainder(10, 3)")), 1.0, places=7
         )
         self.assertAlmostEqual(
-            float(evaluate_mathematical_expression("remainder(10, 6)")), -2.0, places=7
+            float(execute_mathematical_computation("remainder(10, 6)")), -2.0, places=7
         )
         self.assertAlmostEqual(
-            float(evaluate_mathematical_expression("remainder(10, 10)")), 0.0, places=7
+            float(execute_mathematical_computation("remainder(10, 10)")), 0.0, places=7
         )
 
     def test_modf(self):
-        result = evaluate_mathematical_expression("modf(1.5)")
+        result = execute_mathematical_computation("modf(1.5)")
         self.assertIn("0.5", result)
         self.assertIn("1.0", result)
-        result = evaluate_mathematical_expression("modf(2.7)")
+        result = execute_mathematical_computation("modf(2.7)")
         self.assertIn("0.7", result)
-        result = evaluate_mathematical_expression("modf(-1.5)")
+        result = execute_mathematical_computation("modf(-1.5)")
         self.assertIn("-0.5", result)
 
     def test_frexp(self):
-        result = evaluate_mathematical_expression("frexp(4)")
+        result = execute_mathematical_computation("frexp(4)")
         self.assertIn("0.5", result)
         self.assertIn("3", result)
-        result = evaluate_mathematical_expression("frexp(8)")
+        result = execute_mathematical_computation("frexp(8)")
         self.assertIn("0.5", result)
         self.assertIn("4", result)
-        result = evaluate_mathematical_expression("frexp(1)")
+        result = execute_mathematical_computation("frexp(1)")
         self.assertIn("0.5", result)
 
     def test_ldexp(self):
         self.assertAlmostEqual(
-            float(evaluate_mathematical_expression("ldexp(0.5, 3)")), 4.0, places=7
+            float(execute_mathematical_computation("ldexp(0.5, 3)")), 4.0, places=7
         )
         self.assertAlmostEqual(
-            float(evaluate_mathematical_expression("ldexp(1, 0)")), 1.0, places=7
+            float(execute_mathematical_computation("ldexp(1, 0)")), 1.0, places=7
         )
         self.assertAlmostEqual(
-            float(evaluate_mathematical_expression("ldexp(0.5, 4)")), 8.0, places=7
+            float(execute_mathematical_computation("ldexp(0.5, 4)")), 8.0, places=7
         )
 
     def test_isfinite(self):
-        self.assertEqual(evaluate_mathematical_expression("isfinite(0)"), "True")
-        self.assertEqual(evaluate_mathematical_expression("isfinite(1.5)"), "True")
-        self.assertEqual(evaluate_mathematical_expression("isfinite(inf)"), "False")
+        self.assertEqual(execute_mathematical_computation("isfinite(0)"), "True")
+        self.assertEqual(execute_mathematical_computation("isfinite(1.5)"), "True")
+        self.assertEqual(execute_mathematical_computation("isfinite(inf)"), "False")
 
     def test_isinf(self):
-        self.assertEqual(evaluate_mathematical_expression("isinf(inf)"), "True")
-        self.assertEqual(evaluate_mathematical_expression("isinf(-inf)"), "True")
-        self.assertEqual(evaluate_mathematical_expression("isinf(1.0)"), "False")
+        self.assertEqual(execute_mathematical_computation("isinf(inf)"), "True")
+        self.assertEqual(execute_mathematical_computation("isinf(-inf)"), "True")
+        self.assertEqual(execute_mathematical_computation("isinf(1.0)"), "False")
 
     def test_isnan(self):
-        self.assertEqual(evaluate_mathematical_expression("isnan(nan)"), "True")
-        self.assertEqual(evaluate_mathematical_expression("isnan(1.0)"), "False")
-        self.assertEqual(evaluate_mathematical_expression("isnan(inf)"), "False")
+        self.assertEqual(execute_mathematical_computation("isnan(nan)"), "True")
+        self.assertEqual(execute_mathematical_computation("isnan(1.0)"), "False")
+        self.assertEqual(execute_mathematical_computation("isnan(inf)"), "False")
 
     def test_isclose(self):
-        self.assertEqual(evaluate_mathematical_expression("isclose(1.0, 1.0)"), "True")
-        self.assertEqual(evaluate_mathematical_expression("isclose(1.0, 1.00001)"), "False")
-        self.assertEqual(evaluate_mathematical_expression("isclose(1.0, 1.000001)"), "False")
+        self.assertEqual(execute_mathematical_computation("isclose(1.0, 1.0)"), "True")
+        self.assertEqual(execute_mathematical_computation("isclose(1.0, 1.00001)"), "False")
+        self.assertEqual(execute_mathematical_computation("isclose(1.0, 1.000001)"), "False")
 
     def test_comb(self):
         try:
-            self.assertEqual(evaluate_mathematical_expression("comb(5, 2)"), "10")
-            self.assertEqual(evaluate_mathematical_expression("comb(10, 3)"), "120")
-            self.assertEqual(evaluate_mathematical_expression("comb(4, 4)"), "1")
+            self.assertEqual(execute_mathematical_computation("comb(5, 2)"), "10")
+            self.assertEqual(execute_mathematical_computation("comb(10, 3)"), "120")
+            self.assertEqual(execute_mathematical_computation("comb(4, 4)"), "1")
         except Exception:
             self.skipTest("comb not available in this Python version")
 
     def test_perm(self):
         try:
-            self.assertEqual(evaluate_mathematical_expression("perm(5, 2)"), "20")
-            self.assertEqual(evaluate_mathematical_expression("perm(4, 3)"), "24")
-            self.assertEqual(evaluate_mathematical_expression("perm(3, 3)"), "6")
+            self.assertEqual(execute_mathematical_computation("perm(5, 2)"), "20")
+            self.assertEqual(execute_mathematical_computation("perm(4, 3)"), "24")
+            self.assertEqual(execute_mathematical_computation("perm(3, 3)"), "6")
         except Exception:
             self.skipTest("perm not available in this Python version")
 
     def test_erf(self):
-        self.assertAlmostEqual(float(evaluate_mathematical_expression("erf(0)")), 0.0, places=7)
+        self.assertAlmostEqual(float(execute_mathematical_computation("erf(0)")), 0.0, places=7)
         self.assertAlmostEqual(
-            float(evaluate_mathematical_expression("erf(1)")), math.erf(1), places=7
+            float(execute_mathematical_computation("erf(1)")), math.erf(1), places=7
         )
         self.assertAlmostEqual(
-            float(evaluate_mathematical_expression("erf(-1)")), math.erf(-1), places=7
+            float(execute_mathematical_computation("erf(-1)")), math.erf(-1), places=7
         )
 
     def test_erfc(self):
-        self.assertAlmostEqual(float(evaluate_mathematical_expression("erfc(0)")), 1.0, places=7)
+        self.assertAlmostEqual(float(execute_mathematical_computation("erfc(0)")), 1.0, places=7)
         self.assertAlmostEqual(
-            float(evaluate_mathematical_expression("erfc(1)")), math.erfc(1), places=7
+            float(execute_mathematical_computation("erfc(1)")), math.erfc(1), places=7
         )
         self.assertAlmostEqual(
-            float(evaluate_mathematical_expression("erfc(-1)")), math.erfc(-1), places=7
+            float(execute_mathematical_computation("erfc(-1)")), math.erfc(-1), places=7
         )
 
     def test_gamma(self):
-        self.assertAlmostEqual(float(evaluate_mathematical_expression("gamma(1)")), 1.0, places=7)
-        self.assertAlmostEqual(float(evaluate_mathematical_expression("gamma(2)")), 1.0, places=7)
-        self.assertAlmostEqual(float(evaluate_mathematical_expression("gamma(5)")), 24.0, places=7)
+        self.assertAlmostEqual(float(execute_mathematical_computation("gamma(1)")), 1.0, places=7)
+        self.assertAlmostEqual(float(execute_mathematical_computation("gamma(2)")), 1.0, places=7)
+        self.assertAlmostEqual(float(execute_mathematical_computation("gamma(5)")), 24.0, places=7)
 
     def test_lgamma(self):
-        self.assertAlmostEqual(float(evaluate_mathematical_expression("lgamma(1)")), 0.0, places=7)
-        self.assertAlmostEqual(float(evaluate_mathematical_expression("lgamma(2)")), 0.0, places=7)
+        self.assertAlmostEqual(float(execute_mathematical_computation("lgamma(1)")), 0.0, places=7)
+        self.assertAlmostEqual(float(execute_mathematical_computation("lgamma(2)")), 0.0, places=7)
         self.assertAlmostEqual(
-            float(evaluate_mathematical_expression("lgamma(10)")), math.lgamma(10), places=7
+            float(execute_mathematical_computation("lgamma(10)")), math.lgamma(10), places=7
         )
 
     def test_nextafter(self):
         try:
-            result = float(evaluate_mathematical_expression("nextafter(1, 2)"))
+            result = float(execute_mathematical_computation("nextafter(1, 2)"))
             self.assertGreater(result, 1.0)
             self.assertLess(result, 1.0001)
-            result = float(evaluate_mathematical_expression("nextafter(1, 0)"))
+            result = float(execute_mathematical_computation("nextafter(1, 0)"))
             self.assertLess(result, 1.0)
             self.assertAlmostEqual(
-                float(evaluate_mathematical_expression("nextafter(0, 1)")), 5e-324, places=320
+                float(execute_mathematical_computation("nextafter(0, 1)")), 5e-324, places=320
             )
         except Exception:
             self.skipTest("nextafter not available in this Python version")
 
     def test_ulp(self):
         try:
-            self.assertGreater(float(evaluate_mathematical_expression("ulp(1.0)")), 0)
-            self.assertLess(float(evaluate_mathematical_expression("ulp(1.0)")), 1e-10)
+            self.assertGreater(float(execute_mathematical_computation("ulp(1.0)")), 0)
+            self.assertLess(float(execute_mathematical_computation("ulp(1.0)")), 1e-10)
             self.assertGreater(
-                float(evaluate_mathematical_expression("ulp(1000000.0)")),
-                float(evaluate_mathematical_expression("ulp(1.0)")),
+                float(execute_mathematical_computation("ulp(1000000.0)")),
+                float(execute_mathematical_computation("ulp(1.0)")),
             )
         except Exception:
             self.skipTest("ulp not available in this Python version")
 
     def test_pi_constant(self):
-        self.assertAlmostEqual(float(evaluate_mathematical_expression("pi")), math.pi, places=7)
+        self.assertAlmostEqual(float(execute_mathematical_computation("pi")), math.pi, places=7)
         self.assertAlmostEqual(
-            float(evaluate_mathematical_expression("pi * 2")), math.pi * 2, places=7
+            float(execute_mathematical_computation("pi * 2")), math.pi * 2, places=7
         )
         self.assertAlmostEqual(
-            float(evaluate_mathematical_expression("pi / 2")), math.pi / 2, places=7
+            float(execute_mathematical_computation("pi / 2")), math.pi / 2, places=7
         )
 
     def test_e_constant(self):
-        self.assertAlmostEqual(float(evaluate_mathematical_expression("e")), math.e, places=7)
+        self.assertAlmostEqual(float(execute_mathematical_computation("e")), math.e, places=7)
         self.assertAlmostEqual(
-            float(evaluate_mathematical_expression("e * 2")), math.e * 2, places=7
+            float(execute_mathematical_computation("e * 2")), math.e * 2, places=7
         )
         self.assertAlmostEqual(
-            float(evaluate_mathematical_expression("e ** 2")), math.e**2, places=7
+            float(execute_mathematical_computation("e ** 2")), math.e**2, places=7
         )
 
     def test_tau_constant(self):
-        self.assertAlmostEqual(float(evaluate_mathematical_expression("tau")), math.tau, places=7)
+        self.assertAlmostEqual(float(execute_mathematical_computation("tau")), math.tau, places=7)
         self.assertAlmostEqual(
-            float(evaluate_mathematical_expression("tau / 4")), math.tau / 4, places=7
+            float(execute_mathematical_computation("tau / 4")), math.tau / 4, places=7
         )
         self.assertAlmostEqual(
-            float(evaluate_mathematical_expression("tau / 2")), math.pi, places=7
+            float(execute_mathematical_computation("tau / 2")), math.pi, places=7
         )
 
     def test_inf_constant(self):
         with self.assertRaises(ValueError, msg="Calculator should handle inf safely"):
-            evaluate_mathematical_expression("inf")
+            execute_mathematical_computation("inf")
         with self.assertRaises(ValueError):
-            evaluate_mathematical_expression("1.0 / 0.0")
+            execute_mathematical_computation("1.0 / 0.0")
         try:
-            result = evaluate_mathematical_expression("10**308")
+            result = execute_mathematical_computation("10**308")
             self.assertIsInstance(result, str)
         except ValueError:
             pass
 
     def test_nan_constant(self):
-        self.assertEqual(evaluate_mathematical_expression("nan"), "nan")
-        self.assertEqual(evaluate_mathematical_expression("nan + 1"), "nan")
-        self.assertEqual(evaluate_mathematical_expression("0 * nan"), "nan")
+        self.assertEqual(execute_mathematical_computation("nan"), "nan")
+        self.assertEqual(execute_mathematical_computation("nan + 1"), "nan")
+        self.assertEqual(execute_mathematical_computation("0 * nan"), "nan")
 
     def test_basic_arithmetic(self):
-        self.assertEqual(evaluate_mathematical_expression("2 + 3"), "5")
-        self.assertEqual(evaluate_mathematical_expression("10 - 4"), "6")
-        self.assertEqual(evaluate_mathematical_expression("5 * 6"), "30")
-        self.assertEqual(evaluate_mathematical_expression("15 / 3"), "5.0")
-        self.assertEqual(evaluate_mathematical_expression("7 // 2"), "3")
-        self.assertEqual(evaluate_mathematical_expression("10 % 3"), "1")
-        self.assertEqual(evaluate_mathematical_expression("2 ** 3"), "8")
+        self.assertEqual(execute_mathematical_computation("2 + 3"), "5")
+        self.assertEqual(execute_mathematical_computation("10 - 4"), "6")
+        self.assertEqual(execute_mathematical_computation("5 * 6"), "30")
+        self.assertEqual(execute_mathematical_computation("15 / 3"), "5.0")
+        self.assertEqual(execute_mathematical_computation("7 // 2"), "3")
+        self.assertEqual(execute_mathematical_computation("10 % 3"), "1")
+        self.assertEqual(execute_mathematical_computation("2 ** 3"), "8")
 
-        self.assertEqual(evaluate_mathematical_expression("98765 + 87654"), "186419")
-        self.assertEqual(evaluate_mathematical_expression("999999 - 123456"), "876543")
-        self.assertEqual(evaluate_mathematical_expression("12345 * 6789"), "83810205")
+        self.assertEqual(execute_mathematical_computation("98765 + 87654"), "186419")
+        self.assertEqual(execute_mathematical_computation("999999 - 123456"), "876543")
+        self.assertEqual(execute_mathematical_computation("12345 * 6789"), "83810205")
         self.assertAlmostEqual(
-            float(evaluate_mathematical_expression("987654321 / 123")), 8029709.927, places=2
+            float(execute_mathematical_computation("987654321 / 123")), 8029709.927, places=2
         )
-        self.assertEqual(evaluate_mathematical_expression("54321 // 789"), "68")
-        self.assertEqual(evaluate_mathematical_expression("987654 % 12345"), "54")
-        self.assertEqual(evaluate_mathematical_expression("123 ** 4"), "228886641")
+        self.assertEqual(execute_mathematical_computation("54321 // 789"), "68")
+        self.assertEqual(execute_mathematical_computation("987654 % 12345"), "54")
+        self.assertEqual(execute_mathematical_computation("123 ** 4"), "228886641")
 
     def test_unicode_operators(self):
-        self.assertEqual(evaluate_mathematical_expression("2 × 3"), "6")
-        self.assertEqual(evaluate_mathematical_expression("8 ÷ 2"), "4.0")
-        self.assertEqual(evaluate_mathematical_expression("2 ^ 3"), "8")
+        self.assertEqual(execute_mathematical_computation("2 × 3"), "6")
+        self.assertEqual(execute_mathematical_computation("8 ÷ 2"), "4.0")
+        self.assertEqual(execute_mathematical_computation("2 ^ 3"), "8")
 
     def test_complex_expressions(self):
-        self.assertEqual(evaluate_mathematical_expression("(2 + 3) * 4"), "20")
+        self.assertEqual(execute_mathematical_computation("(2 + 3) * 4"), "20")
         self.assertAlmostEqual(
-            float(evaluate_mathematical_expression("sin(pi/2) + cos(0)")), 2.0, places=7
+            float(execute_mathematical_computation("sin(pi/2) + cos(0)")), 2.0, places=7
         )
-        result = evaluate_mathematical_expression("factorial(5) + sqrt(16)")
+        result = execute_mathematical_computation("factorial(5) + sqrt(16)")
         self.assertIn(result, ["124", "124.0"])
 
         self.assertEqual(
-            evaluate_mathematical_expression("(98765 + 12345) * (54321 - 43210)"), "1234543210"
+            execute_mathematical_computation("(98765 + 12345) * (54321 - 43210)"), "1234543210"
         )
         self.assertAlmostEqual(
-            float(evaluate_mathematical_expression("((999 * 888) + 777) / 666")), 1333.167, places=2
+            float(execute_mathematical_computation("((999 * 888) + 777) / 666")), 1333.167, places=2
         )
         self.assertEqual(
-            evaluate_mathematical_expression("(123456 * (789 + 321)) / (987 - 654)"), "411520.0"
+            execute_mathematical_computation("(123456 * (789 + 321)) / (987 - 654)"), "411520.0"
         )
 
     def test_error_handling(self):
         with self.assertRaises(ValueError):
-            evaluate_mathematical_expression("1 / 0")
+            execute_mathematical_computation("1 / 0")
         with self.assertRaises(SyntaxError):
-            evaluate_mathematical_expression("")
+            execute_mathematical_computation("")
         with self.assertRaises(ValueError):
-            evaluate_mathematical_expression("unknown_func()")
+            execute_mathematical_computation("unknown_func()")
 
     def test_new_constants_phi_euler(self):
         self.assertAlmostEqual(
-            float(evaluate_mathematical_expression("phi")), (1 + math.sqrt(5)) / 2, places=7
+            float(execute_mathematical_computation("phi")), (1 + math.sqrt(5)) / 2, places=7
         )
         self.assertAlmostEqual(
-            float(evaluate_mathematical_expression("euler")), 0.5772156649, places=7
+            float(execute_mathematical_computation("euler")), 0.5772156649, places=7
         )
         self.assertAlmostEqual(
-            float(evaluate_mathematical_expression("phi * 2")), (1 + math.sqrt(5)), places=7
+            float(execute_mathematical_computation("phi * 2")), (1 + math.sqrt(5)), places=7
         )
 
     def test_statistics_functions(self):
         try:
-            result = evaluate_mathematical_expression("mean([1, 2, 3, 4, 5])")
+            result = execute_mathematical_computation("mean([1, 2, 3, 4, 5])")
             if "Error" in result or "not" in result.lower():
                 self.skipTest("List syntax not supported in calculator")
             else:
@@ -536,55 +536,55 @@ class TestCalculator(unittest.TestCase):
 
     def test_complex_functions_phase_polar(self):
         self.assertAlmostEqual(
-            float(evaluate_mathematical_expression("phase(1+1j)")), math.pi / 4, places=7
+            float(execute_mathematical_computation("phase(1+1j)")), math.pi / 4, places=7
         )
-        result = evaluate_mathematical_expression("polar(1+1j)")
+        result = execute_mathematical_computation("polar(1+1j)")
         self.assertTrue("1.414" in result or "Result:" in result)
 
     def test_complex_trigonometry_functions(self):
-        result = evaluate_mathematical_expression("csin(0)")
+        result = execute_mathematical_computation("csin(0)")
         self.assertTrue("0" in result or "Result:" in result)
-        result = evaluate_mathematical_expression("ccos(0)")
+        result = execute_mathematical_computation("ccos(0)")
         self.assertTrue("1" in result or "Result:" in result)
-        result = evaluate_mathematical_expression("cexp(0)")
+        result = execute_mathematical_computation("cexp(0)")
         self.assertTrue("1" in result or "Result:" in result)
 
     def test_complex_logarithm_functions(self):
-        result = evaluate_mathematical_expression("clog(1)")
+        result = execute_mathematical_computation("clog(1)")
         self.assertTrue("0" in result or "Result:" in result)
-        result = evaluate_mathematical_expression("clog10(1)")
+        result = execute_mathematical_computation("clog10(1)")
         self.assertTrue("0" in result or "Result:" in result)
-        result = evaluate_mathematical_expression("csqrt(4)")
+        result = execute_mathematical_computation("csqrt(4)")
         self.assertTrue("2" in result or "Result:" in result)
 
     def test_enhanced_mathematical_functions(self):
         try:
-            result = evaluate_mathematical_expression("cbrt(27)")
+            result = execute_mathematical_computation("cbrt(27)")
             self.assertAlmostEqual(float(result), 3.0, places=7)
         except Exception:
             self.skipTest("cbrt not available in this Python version")
 
         try:
-            result = evaluate_mathematical_expression("comb(5, 2)")
+            result = execute_mathematical_computation("comb(5, 2)")
             self.assertEqual(result, "10")
         except Exception:
             self.skipTest("comb not available in this Python version")
 
         try:
-            result = evaluate_mathematical_expression("perm(5, 2)")
+            result = execute_mathematical_computation("perm(5, 2)")
             self.assertEqual(result, "20")
         except Exception:
             self.skipTest("perm not available in this Python version")
 
     def test_complex_number_expressions(self):
-        result = evaluate_mathematical_expression("1+2j")
+        result = execute_mathematical_computation("1+2j")
         self.assertTrue("1" in result and "2j" in result)
 
-        result = evaluate_mathematical_expression("(1+2j) + (3+4j)")
+        result = execute_mathematical_computation("(1+2j) + (3+4j)")
         self.assertTrue("4" in result and "6j" in result)
 
         try:
-            result = evaluate_mathematical_expression("abs(3+4j)")
+            result = execute_mathematical_computation("abs(3+4j)")
             self.assertAlmostEqual(float(result), 5.0, places=7)
         except Exception:
             self.skipTest("Complex abs function not implemented")
@@ -602,7 +602,7 @@ class TestCalculator(unittest.TestCase):
 
         for expr in dangerous_expressions:
             with self.assertRaises((ValueError, SyntaxError)) as context:
-                evaluate_mathematical_expression(expr)
+                execute_mathematical_computation(expr)
             error_message = str(context.exception).lower()
             self.assertTrue(
                 "forbidden pattern" in error_message
@@ -612,14 +612,14 @@ class TestCalculator(unittest.TestCase):
             )
 
     def test_resource_limits_factorial(self):
-        result = evaluate_mathematical_expression("factorial(5)")
+        result = execute_mathematical_computation("factorial(5)")
         self.assertEqual(result, "120")
 
-        result = evaluate_mathematical_expression("factorial(10)")
+        result = execute_mathematical_computation("factorial(10)")
         self.assertEqual(result, "3628800")
 
         try:
-            result = evaluate_mathematical_expression("factorial(200)")
+            result = execute_mathematical_computation("factorial(200)")
             if "Error" not in result:
                 self.fail("Large factorial should be limited")
         except Exception:
@@ -628,7 +628,7 @@ class TestCalculator(unittest.TestCase):
     def test_resource_limits_expression_length(self):
         very_long_expr = "1+" * 2000 + "1"
         try:
-            result = evaluate_mathematical_expression(very_long_expr)
+            result = execute_mathematical_computation(very_long_expr)
             if "Error" not in result:
                 self.fail("Very long expression should be limited")
         except Exception:
@@ -636,7 +636,7 @@ class TestCalculator(unittest.TestCase):
 
     def test_enhanced_error_handling_complex(self):
         try:
-            result = evaluate_mathematical_expression("log(-1)")
+            result = execute_mathematical_computation("log(-1)")
             if "Error" in result or "nan" in result or "inf" in result:
                 pass
             else:
@@ -645,7 +645,7 @@ class TestCalculator(unittest.TestCase):
             pass
 
         try:
-            result = evaluate_mathematical_expression("sqrt(-1)")
+            result = execute_mathematical_computation("sqrt(-1)")
             if "Error" in result or "j" in result:
                 pass
             else:
@@ -654,67 +654,67 @@ class TestCalculator(unittest.TestCase):
             pass
 
     def test_trigonometric_edge_cases(self):
-        self.assertAlmostEqual(float(evaluate_mathematical_expression("sin(pi)")), 0.0, places=5)
-        self.assertAlmostEqual(float(evaluate_mathematical_expression("cos(2*pi)")), 1.0, places=7)
-        self.assertAlmostEqual(float(evaluate_mathematical_expression("tan(pi/4)")), 1.0, places=7)
+        self.assertAlmostEqual(float(execute_mathematical_computation("sin(pi)")), 0.0, places=5)
+        self.assertAlmostEqual(float(execute_mathematical_computation("cos(2*pi)")), 1.0, places=7)
+        self.assertAlmostEqual(float(execute_mathematical_computation("tan(pi/4)")), 1.0, places=7)
 
     def test_logarithmic_edge_cases(self):
-        self.assertEqual(evaluate_mathematical_expression("log(1)"), "0")
-        self.assertAlmostEqual(float(evaluate_mathematical_expression("log(e)")), 1.0, places=7)
-        self.assertEqual(evaluate_mathematical_expression("log10(1)"), "0")
-        self.assertEqual(evaluate_mathematical_expression("log10(10)"), "1")
+        self.assertEqual(execute_mathematical_computation("log(1)"), "0")
+        self.assertAlmostEqual(float(execute_mathematical_computation("log(e)")), 1.0, places=7)
+        self.assertEqual(execute_mathematical_computation("log10(1)"), "0")
+        self.assertEqual(execute_mathematical_computation("log10(10)"), "1")
 
     def test_exponential_edge_cases(self):
-        self.assertEqual(evaluate_mathematical_expression("exp(0)"), "1")
-        self.assertAlmostEqual(float(evaluate_mathematical_expression("exp(1)")), math.e, places=7)
+        self.assertEqual(execute_mathematical_computation("exp(0)"), "1")
+        self.assertAlmostEqual(float(execute_mathematical_computation("exp(1)")), math.e, places=7)
         try:
-            self.assertEqual(evaluate_mathematical_expression("exp2(0)"), "1")
-            self.assertEqual(evaluate_mathematical_expression("exp2(3)"), "8")
+            self.assertEqual(execute_mathematical_computation("exp2(0)"), "1")
+            self.assertEqual(execute_mathematical_computation("exp2(3)"), "8")
         except Exception:
             self.skipTest("exp2 not available in this Python version")
 
     def test_hyperbolic_functions_edge_cases(self):
-        self.assertEqual(evaluate_mathematical_expression("sinh(0)"), "0")
-        self.assertEqual(evaluate_mathematical_expression("cosh(0)"), "1")
-        self.assertEqual(evaluate_mathematical_expression("tanh(0)"), "0")
+        self.assertEqual(execute_mathematical_computation("sinh(0)"), "0")
+        self.assertEqual(execute_mathematical_computation("cosh(0)"), "1")
+        self.assertEqual(execute_mathematical_computation("tanh(0)"), "0")
 
     def test_inverse_hyperbolic_functions_edge_cases(self):
-        self.assertEqual(evaluate_mathematical_expression("asinh(0)"), "0")
-        self.assertEqual(evaluate_mathematical_expression("acosh(1)"), "0")
-        self.assertEqual(evaluate_mathematical_expression("atanh(0)"), "0")
+        self.assertEqual(execute_mathematical_computation("asinh(0)"), "0")
+        self.assertEqual(execute_mathematical_computation("acosh(1)"), "0")
+        self.assertEqual(execute_mathematical_computation("atanh(0)"), "0")
 
     def test_special_values_handling(self):
         with self.assertRaises(ValueError):
-            evaluate_mathematical_expression("inf")
+            execute_mathematical_computation("inf")
         try:
-            result = evaluate_mathematical_expression("nan")
+            result = execute_mathematical_computation("nan")
             self.assertEqual(result, "nan")
         except ValueError:
             pass
         with self.assertRaises(ValueError):
-            evaluate_mathematical_expression("1.0 / 0.0")
+            execute_mathematical_computation("1.0 / 0.0")
 
     def test_precision_and_rounding(self):
-        self.assertAlmostEqual(float(evaluate_mathematical_expression("pi")), math.pi, places=10)
-        self.assertAlmostEqual(float(evaluate_mathematical_expression("e")), math.e, places=10)
-        self.assertAlmostEqual(float(evaluate_mathematical_expression("tau")), math.tau, places=10)
+        self.assertAlmostEqual(float(execute_mathematical_computation("pi")), math.pi, places=10)
+        self.assertAlmostEqual(float(execute_mathematical_computation("e")), math.e, places=10)
+        self.assertAlmostEqual(float(execute_mathematical_computation("tau")), math.tau, places=10)
 
     def test_mathematical_identities(self):
         self.assertAlmostEqual(
-            float(evaluate_mathematical_expression("sin(pi/2)**2 + cos(pi/2)**2")), 1.0, places=7
+            float(execute_mathematical_computation("sin(pi/2)**2 + cos(pi/2)**2")), 1.0, places=7
         )
         self.assertAlmostEqual(
-            float(evaluate_mathematical_expression("exp(log(5))")), 5.0, places=7
+            float(execute_mathematical_computation("exp(log(5))")), 5.0, places=7
         )
         self.assertAlmostEqual(
-            float(evaluate_mathematical_expression("log(exp(3))")), 3.0, places=7
+            float(execute_mathematical_computation("log(exp(3))")), 3.0, places=7
         )
 
     def test_large_number_handling(self):
-        result = evaluate_mathematical_expression("2**50")
+        result = execute_mathematical_computation("2**50")
         self.assertEqual(result, str(2**50))
 
-        result = evaluate_mathematical_expression("factorial(20)")
+        result = execute_mathematical_computation("factorial(20)")
         expected = str(math.factorial(20))
         self.assertEqual(result, expected)
 
@@ -940,84 +940,84 @@ class TestUnitConversions(unittest.TestCase):
             convert_unit(1, "invalid_unit", "m", "length")
 
     def test_complex_nested_expressions(self):
-        result = float(evaluate_mathematical_expression("sin(cos(tan(pi/6)))"))
+        result = float(execute_mathematical_computation("sin(cos(tan(pi/6)))"))
         expected = math.sin(math.cos(math.tan(math.pi / 6)))
         self.assertAlmostEqual(result, expected, places=10)
 
-        result = float(evaluate_mathematical_expression("log(exp(2) * exp(3))"))
+        result = float(execute_mathematical_computation("log(exp(2) * exp(3))"))
         self.assertAlmostEqual(result, 5, places=10)
 
-        result = float(evaluate_mathematical_expression("sqrt(16) + sqrt(9) * sqrt(4)"))
+        result = float(execute_mathematical_computation("sqrt(16) + sqrt(9) * sqrt(4)"))
         self.assertEqual(result, 10)
 
     def test_complex_trigonometric_identities(self):
-        result = float(evaluate_mathematical_expression("sin(pi/3)^2 + cos(pi/3)^2"))
+        result = float(execute_mathematical_computation("sin(pi/3)^2 + cos(pi/3)^2"))
         self.assertAlmostEqual(result, 1, places=10)
 
         angle = math.pi / 4
-        result = float(evaluate_mathematical_expression(f"tan({angle})"))
-        expected = float(evaluate_mathematical_expression(f"sin({angle})/cos({angle})"))
+        result = float(execute_mathematical_computation(f"tan({angle})"))
+        expected = float(execute_mathematical_computation(f"sin({angle})/cos({angle})"))
         self.assertAlmostEqual(result, expected, places=10)
 
     def test_advanced_logarithms(self):
-        result = float(evaluate_mathematical_expression("log(256)/log(2)"))
+        result = float(execute_mathematical_computation("log(256)/log(2)"))
         self.assertAlmostEqual(result, 8, places=5)
 
-        result = float(evaluate_mathematical_expression("log(1000)/log(10)"))
+        result = float(execute_mathematical_computation("log(1000)/log(10)"))
         self.assertAlmostEqual(result, 3, places=5)
 
-        result = float(evaluate_mathematical_expression("log(exp(5))"))
+        result = float(execute_mathematical_computation("log(exp(5))"))
         self.assertAlmostEqual(result, 5, places=5)
 
     def test_factorial_and_combinatorics(self):
-        result = float(evaluate_mathematical_expression("factorial(6)"))
+        result = float(execute_mathematical_computation("factorial(6)"))
         self.assertAlmostEqual(result, 720, places=5)
 
-        result = float(evaluate_mathematical_expression("factorial(10)/(factorial(10-3))"))
+        result = float(execute_mathematical_computation("factorial(10)/(factorial(10-3))"))
         self.assertAlmostEqual(result, 720, places=5)
 
         result = float(
-            evaluate_mathematical_expression("factorial(10)/(factorial(3)*factorial(10-3))")
+            execute_mathematical_computation("factorial(10)/(factorial(3)*factorial(10-3))")
         )
         self.assertAlmostEqual(result, 120, places=5)
 
     def test_hyperbolic_complex(self):
-        result = float(evaluate_mathematical_expression("sinh(2) + cosh(2)"))
+        result = float(execute_mathematical_computation("sinh(2) + cosh(2)"))
         expected = math.sinh(2) + math.cosh(2)
         self.assertAlmostEqual(result, expected, places=10)
 
-        result = float(evaluate_mathematical_expression("tanh(1) * tanh(2)"))
+        result = float(execute_mathematical_computation("tanh(1) * tanh(2)"))
         expected = math.tanh(1) * math.tanh(2)
         self.assertAlmostEqual(result, expected, places=10)
 
     def test_modulo_operations(self):
-        result = float(evaluate_mathematical_expression("17 % 5"))
+        result = float(execute_mathematical_computation("17 % 5"))
         self.assertEqual(result, 2)
 
-        result = float(evaluate_mathematical_expression("100 % 7"))
+        result = float(execute_mathematical_computation("100 % 7"))
         self.assertEqual(result, 2)
 
-        result = float(evaluate_mathematical_expression("25 % 4"))
+        result = float(execute_mathematical_computation("25 % 4"))
         self.assertEqual(result, 1)
 
     def test_floor_ceil_functions(self):
-        result = float(evaluate_mathematical_expression("floor(3.7)"))
+        result = float(execute_mathematical_computation("floor(3.7)"))
         self.assertEqual(result, 3)
 
-        result = float(evaluate_mathematical_expression("ceil(3.2)"))
+        result = float(execute_mathematical_computation("ceil(3.2)"))
         self.assertEqual(result, 4)
 
-        result = float(evaluate_mathematical_expression("floor(-2.3)"))
+        result = float(execute_mathematical_computation("floor(-2.3)"))
         self.assertEqual(result, -3)
 
     def test_gcd_lcm_calculations(self):
-        result = float(evaluate_mathematical_expression("gcd(48, 18)"))
+        result = float(execute_mathematical_computation("gcd(48, 18)"))
         self.assertEqual(result, 6)
 
-        result = float(evaluate_mathematical_expression("lcm(12, 15)"))
+        result = float(execute_mathematical_computation("lcm(12, 15)"))
         self.assertEqual(result, 60)
 
-        result = float(evaluate_mathematical_expression("gcd(100, 75)"))
+        result = float(execute_mathematical_computation("gcd(100, 75)"))
         self.assertEqual(result, 25)
 
     def test_complex_unit_chains(self):
@@ -1256,16 +1256,16 @@ class TestUnitConversions(unittest.TestCase):
         self.assertEqual(formatted, "5.6700e+23")
 
     def test_special_mathematical_constants(self):
-        pi_value = float(evaluate_mathematical_expression("pi"))
+        pi_value = float(execute_mathematical_computation("pi"))
         self.assertAlmostEqual(pi_value, math.pi, places=10)
 
-        e_value = float(evaluate_mathematical_expression("e"))
+        e_value = float(execute_mathematical_computation("e"))
         self.assertAlmostEqual(e_value, math.e, places=10)
 
-        tau_value = float(evaluate_mathematical_expression("tau"))
+        tau_value = float(execute_mathematical_computation("tau"))
         self.assertAlmostEqual(tau_value, 2 * math.pi, places=10)
 
-        phi_value = float(evaluate_mathematical_expression("phi"))
+        phi_value = float(execute_mathematical_computation("phi"))
         self.assertAlmostEqual(phi_value, (1 + math.sqrt(5)) / 2, places=10)
 
     def test_complex_financial_scenarios(self):
@@ -1299,39 +1299,39 @@ class TestUnitConversions(unittest.TestCase):
         self.assertEqual(decrease, -25)
 
     def test_mixed_operations(self):
-        result = float(evaluate_mathematical_expression("sin(pi/4) * sqrt(2)"))
+        result = float(execute_mathematical_computation("sin(pi/4) * sqrt(2)"))
         self.assertAlmostEqual(result, 1, places=5)
 
-        result = float(evaluate_mathematical_expression("log(100) / log(10)"))
+        result = float(execute_mathematical_computation("log(100) / log(10)"))
         self.assertAlmostEqual(result, 2, places=5)
 
-        result = float(evaluate_mathematical_expression("exp(log(5) + log(3))"))
+        result = float(execute_mathematical_computation("exp(log(5) + log(3))"))
         self.assertAlmostEqual(result, 15, places=4)
 
-        result = float(evaluate_mathematical_expression("2**10 - 1000"))
+        result = float(execute_mathematical_computation("2**10 - 1000"))
         self.assertAlmostEqual(result, 24, places=5)
 
     def test_extreme_values(self):
-        result = float(evaluate_mathematical_expression("factorial(20)"))
+        result = float(execute_mathematical_computation("factorial(20)"))
         self.assertEqual(result, 2432902008176640000)
 
-        result = float(evaluate_mathematical_expression("log(1e-10)"))
+        result = float(execute_mathematical_computation("log(1e-10)"))
         self.assertAlmostEqual(result, -23.0259, places=3)
 
-        result = float(evaluate_mathematical_expression("exp(20)"))
+        result = float(execute_mathematical_computation("exp(20)"))
         self.assertAlmostEqual(result, 485165195.4, places=1)
 
     def test_degree_radian_conversions(self):
-        result = float(evaluate_mathematical_expression("degrees(pi)"))
+        result = float(execute_mathematical_computation("degrees(pi)"))
         self.assertEqual(result, 180)
 
-        result = float(evaluate_mathematical_expression("radians(180)"))
+        result = float(execute_mathematical_computation("radians(180)"))
         self.assertAlmostEqual(result, math.pi, places=10)
 
-        result = float(evaluate_mathematical_expression("degrees(2*pi)"))
+        result = float(execute_mathematical_computation("degrees(2*pi)"))
         self.assertEqual(result, 360)
 
-        result = float(evaluate_mathematical_expression("radians(90)"))
+        result = float(execute_mathematical_computation("radians(90)"))
         self.assertAlmostEqual(result, math.pi / 2, places=10)
 
 

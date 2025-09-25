@@ -18,23 +18,23 @@ from typing import Any
 
 from mcp.server import FastMCP
 
-MAX_EXPRESSION_LENGTH = 1000
-MAX_EXPRESSION_DEPTH = 10
-MAX_HISTORY_SIZE = 100
-MAX_FACTORIAL_INPUT = 300
-MAX_POWER_EXPONENT = 10000
-MAX_RESULT_LENGTH = 10000
-MAX_MEMORY_MB = 512
-MAX_LIST_SIZE = 10000
+MAXIMUM_MATHEMATICAL_EXPRESSION_CHARACTER_LIMIT = 1000
+MAXIMUM_AST_NODE_DEPTH_LIMIT = 10
+CALCULATION_HISTORY_ENTRY_LIMIT = 100
+FACTORIAL_COMPUTATION_UPPER_BOUND = 300
+EXPONENTIATION_SAFETY_THRESHOLD = 10000
+MAXIMUM_COMPUTATION_RESULT_CHARACTER_LIMIT = 10000
+MAXIMUM_MEMORY_USAGE_MEGABYTES = 512
+MAXIMUM_LIST_ELEMENT_COUNT_LIMIT = 10000
 
-COMPUTATION_TIMEOUT = 15.0
-ENABLE_AUDIT_LOGGING = True
+MATHEMATICAL_OPERATION_TIMEOUT_SECONDS = 15.0
+SECURITY_AUDIT_LOGGING_ENABLED = True
 
-MAX_COMPUTATION_TIME = 20.0
-MAX_RECURSIVE_CALLS = 1000
+MAXIMUM_COMPUTATION_DURATION_SECONDS = 20.0
+MAXIMUM_RECURSIVE_FUNCTION_CALL_DEPTH = 1000
 ENABLE_RATE_LIMITING = True
 RATE_LIMIT_WINDOW = 60
-MAX_REQUESTS_PER_WINDOW = 1000000
+MAXIMUM_CLIENT_REQUESTS_PER_TIME_WINDOW = 1000000
 ENABLE_INPUT_HASHING = True
 
 FORBIDDEN_PATTERNS = [
@@ -70,7 +70,7 @@ mathematical_security_logger = logging.getLogger(f"{__name__}.security")
 mathematical_security_logger.setLevel(logging.INFO)
 
 
-class AsyncLogger:
+class AsynchronousLoggingManager:
     def __init__(self, base_logger):
         self.queue = queue.Queue()
         self.logger = base_logger
@@ -89,11 +89,11 @@ class AsyncLogger:
                 continue
 
 
-async_mathematical_logger = AsyncLogger(mathematical_computation_logger)
-async_mathematical_security_logger = AsyncLogger(mathematical_security_logger)
+async_mathematical_logger = AsynchronousLoggingManager(mathematical_computation_logger)
+async_mathematical_security_logger = AsynchronousLoggingManager(mathematical_security_logger)
 
 
-class LRUCache:
+class LeastRecentlyUsedCache:
     def __init__(self, max_size: int = MAX_CACHE_SIZE):
         self.max_size = max_size
         self.cache = OrderedDict()
@@ -123,7 +123,7 @@ class LRUCache:
             return len(self.cache)
 
 
-class TTLCache:
+class TimeToLiveExpirationCache:
     def __init__(self, max_size: int = MAX_CACHE_SIZE, ttl: float = CACHE_TTL):
         self.max_size = max_size
         self.ttl = ttl
@@ -171,7 +171,7 @@ class TTLCache:
             return len(self.cache)
 
 
-class SessionManager:
+class UserSessionStateManager:
     def __init__(self, max_sessions: int = MAX_SESSIONS, session_ttl: float = MAX_SESSION_TTL):
         self.max_sessions = max_sessions
         self.session_ttl = session_ttl
@@ -258,14 +258,14 @@ class SessionManager:
             }
 
 
-_expression_cache = TTLCache(MAX_CACHE_SIZE, CACHE_TTL)
-_parsed_expression_ast_cache = LRUCache(MAX_CACHE_SIZE)
-_computation_stats = LRUCache(MAX_COMPUTATION_STATS)
-_session_manager = SessionManager()
+_expression_cache = TimeToLiveExpirationCache(MAX_CACHE_SIZE, CACHE_TTL)
+_parsed_expression_ast_cache = LeastRecentlyUsedCache(MAX_CACHE_SIZE)
+_computation_stats = LeastRecentlyUsedCache(MAX_COMPUTATION_STATS)
+_session_manager = UserSessionStateManager()
 
 
 @dataclass
-class CalculationResult:
+class MathematicalComputationResult:
     success: bool
     expression: str
     result: float | complex | bool | tuple | list | None = None
@@ -288,7 +288,7 @@ class CalculationResult:
             return f"Error: {self.error.get('message', 'Unknown error')}"
 
 
-class RateLimiter:
+class ClientRequestRateLimiter:
     def __init__(self, max_requests: int, window: int, max_clients: int = 1000):
         self.max_requests = max_requests
         self.window = window
@@ -331,7 +331,7 @@ class RateLimiter:
             return len(expired_clients)
 
 
-mathematical_computation_rate_limiter = RateLimiter(MAX_REQUESTS_PER_WINDOW, RATE_LIMIT_WINDOW)
+mathematical_computation_rate_limiter = ClientRequestRateLimiter(MAXIMUM_CLIENT_REQUESTS_PER_TIME_WINDOW, RATE_LIMIT_WINDOW)
 
 
 @contextmanager
@@ -841,8 +841,8 @@ STATISTICS_FUNCTIONS = {k: v for k, v in STATISTICS_FUNCTIONS.items() if v is no
 ALL_FUNCTIONS = {**MATH_FUNCTIONS, **STATISTICS_FUNCTIONS, **COMPLEX_FUNCTIONS}
 
 
-class CalculationHistory:
-    def __init__(self, max_size: int = MAX_HISTORY_SIZE):
+class MathematicalCalculationHistory:
+    def __init__(self, max_size: int = CALCULATION_HISTORY_ENTRY_LIMIT):
         self.history: list[dict[str, Any]] = []
         self.max_size = max_size
         self.lock = RLock()
@@ -858,7 +858,7 @@ class CalculationHistory:
             if len(self.history) > self.max_size:
                 self.history.pop(0)
 
-            if ENABLE_AUDIT_LOGGING:
+            if SECURITY_AUDIT_LOGGING_ENABLED:
                 async_mathematical_logger.log(
                     logging.INFO, f"Added calculation: {expression} = {result}"
                 )
@@ -869,19 +869,19 @@ class CalculationHistory:
 
     def clear(self) -> None:
         with self.lock:
-            if ENABLE_AUDIT_LOGGING:
+            if SECURITY_AUDIT_LOGGING_ENABLED:
                 async_mathematical_logger.log(logging.INFO, "Calculation history cleared")
             self.history.clear()
 
 
-mathematical_calculation_history = CalculationHistory()
+mathematical_calculation_history = MathematicalCalculationHistory()
 
 
-def generate_expression_hash(expression: str) -> str:
+def compute_expression_fingerprint(expression: str) -> str:
     return str(hash(expression))
 
 
-def validate_input_security(expression: str, client_id: str = "default") -> bool:
+def validate_expression_security_constraints(expression: str, client_id: str = "default") -> bool:
     if ENABLE_RATE_LIMITING and not mathematical_computation_rate_limiter.check_rate_limit(
         client_id
     ):
@@ -889,7 +889,7 @@ def validate_input_security(expression: str, client_id: str = "default") -> bool
             logging.WARNING, f"Rate limit exceeded for client: {client_id}"
         )
         raise PermissionError(
-            f"Rate limit exceeded: {MAX_REQUESTS_PER_WINDOW} requests per {RATE_LIMIT_WINDOW} seconds"
+            f"Rate limit exceeded: {MAXIMUM_CLIENT_REQUESTS_PER_TIME_WINDOW} requests per {RATE_LIMIT_WINDOW} seconds"
         )
 
     for pattern in FORBIDDEN_PATTERNS:
@@ -909,10 +909,10 @@ def validate_input_security(expression: str, client_id: str = "default") -> bool
     return True
 
 
-def monitor_computation_performance(expression: str, start_time: float, end_time: float) -> None:
+def track_mathematical_operation_performance(expression: str, start_time: float, end_time: float) -> None:
     with _computation_metrics_lock:
         computation_time = end_time - start_time
-        expression_hash = generate_expression_hash(expression)
+        expression_hash = compute_expression_fingerprint(expression)
 
         existing_stats = _computation_stats.get(expression_hash)
         if existing_stats is None:
@@ -932,13 +932,13 @@ def monitor_computation_performance(expression: str, start_time: float, end_time
 
         _computation_stats.set(expression_hash, stats)
 
-        if computation_time > MAX_COMPUTATION_TIME:
+        if computation_time > MAXIMUM_COMPUTATION_DURATION_SECONDS:
             async_mathematical_security_logger.log(
                 logging.WARNING, f"Slow computation: {computation_time:.3f}s for {expression_hash}"
             )
 
 
-def cleanup_mathematical_caches() -> dict[str, int]:
+def cleanup_expired_cache_entries() -> dict[str, int]:
     cleanup_stats = {
         "expression_cache_expired": 0,
         "sessions_expired": 0,
@@ -957,7 +957,7 @@ def start_memory_cleanup_timer() -> None:
 
     def memory_cleanup_task():
         try:
-            cleanup_stats = cleanup_mathematical_caches()
+            cleanup_stats = cleanup_expired_cache_entries()
             total_cleaned = sum(cleanup_stats.values())
             if total_cleaned > 0:
                 async_mathematical_logger.log(logging.INFO, f"Memory cleanup: {cleanup_stats}")
@@ -998,15 +998,15 @@ def shutdown_memory_management() -> None:
     _session_manager.shutdown()
 
 
-def get_cached_result(expression: str) -> str | None:
+def retrieve_cached_computation_result(expression: str) -> str | None:
     return _expression_cache.get(expression)
 
 
-def store_calculation_result(expression: str, result: str) -> None:
+def persist_computation_result_in_cache(expression: str, result: str) -> None:
     _expression_cache.set(expression, result)
 
 
-def get_cached_ast(expression: str) -> ast.AST | None:
+def retrieve_cached_abstract_syntax_tree(expression: str) -> ast.AST | None:
     return _parsed_expression_ast_cache.get(expression)
 
 
@@ -1033,8 +1033,8 @@ def preprocess_expression(expr: str) -> str:
 
 
 def validate_ast_node(node: ast.AST, depth: int = 0, session_vars: dict | None = None) -> bool:
-    if depth > MAX_EXPRESSION_DEPTH:
-        raise ValueError(f"Expression too complex (max depth: {MAX_EXPRESSION_DEPTH})")
+    if depth > MAXIMUM_AST_NODE_DEPTH_LIMIT:
+        raise ValueError(f"Expression too complex (max depth: {MAXIMUM_AST_NODE_DEPTH_LIMIT})")
 
     if isinstance(node, ast.Expression):
         return validate_ast_node(node.body, depth + 1, session_vars)
@@ -1078,8 +1078,8 @@ def validate_ast_node(node: ast.AST, depth: int = 0, session_vars: dict | None =
         return all(validate_ast_node(arg, depth + 1, session_vars) for arg in node.args)
 
     if isinstance(node, ast.List):
-        if len(node.elts) > MAX_LIST_SIZE:
-            raise ValueError(f"List too large (max size: {MAX_LIST_SIZE})")
+        if len(node.elts) > MAXIMUM_LIST_ELEMENT_COUNT_LIMIT:
+            raise ValueError(f"List too large (max size: {MAXIMUM_LIST_ELEMENT_COUNT_LIMIT})")
         return all(validate_ast_node(elt, depth + 1, session_vars) for elt in node.elts)
 
     return False
@@ -1113,8 +1113,8 @@ def evaluate_mathematical_node(node: ast.AST, session_vars: dict | None = None) 
         left = evaluate_mathematical_node(node.left, session_vars)
         right = evaluate_mathematical_node(node.right, session_vars)
 
-        if isinstance(node.op, ast.Pow) and abs(right) > MAX_POWER_EXPONENT:
-            raise ValueError(f"Power exponent too large (max: {MAX_POWER_EXPONENT})")
+        if isinstance(node.op, ast.Pow) and abs(right) > EXPONENTIATION_SAFETY_THRESHOLD:
+            raise ValueError(f"Power exponent too large (max: {EXPONENTIATION_SAFETY_THRESHOLD})")
 
         try:
             return op(left, right)
@@ -1133,14 +1133,14 @@ def evaluate_mathematical_node(node: ast.AST, session_vars: dict | None = None) 
         args = [evaluate_mathematical_node(arg, session_vars) for arg in node.args]
 
         if func_name == "factorial" and len(args) == 1:
-            if args[0] > MAX_FACTORIAL_INPUT:
-                raise ValueError(f"Factorial input too large (max: {MAX_FACTORIAL_INPUT})")
+            if args[0] > FACTORIAL_COMPUTATION_UPPER_BOUND:
+                raise ValueError(f"Factorial input too large (max: {FACTORIAL_COMPUTATION_UPPER_BOUND})")
             if args[0] < 0 or not isinstance(args[0], int):
                 raise ValueError("Factorial requires non-negative integer")
 
         elif func_name == "pow" and len(args) == 2:
-            if abs(args[1]) > MAX_POWER_EXPONENT:
-                raise ValueError(f"Power exponent too large (max: {MAX_POWER_EXPONENT})")
+            if abs(args[1]) > EXPONENTIATION_SAFETY_THRESHOLD:
+                raise ValueError(f"Power exponent too large (max: {EXPONENTIATION_SAFETY_THRESHOLD})")
 
         try:
             return func(*args)
@@ -1153,18 +1153,18 @@ def evaluate_mathematical_node(node: ast.AST, session_vars: dict | None = None) 
     raise ValueError(f"Unsupported node type: {type(node).__name__}")
 
 
-def compute_expression(expression: str, session_id: str | None = None) -> CalculationResult:
+def compute_expression(expression: str, session_id: str | None = None) -> MathematicalComputationResult:
     start_time = time.time()
 
     try:
-        validate_input_security(expression)
+        validate_expression_security_constraints(expression)
 
         expression = expression.strip()
         if not expression:
             raise SyntaxError("Empty expression")
 
-        if len(expression) > MAX_EXPRESSION_LENGTH:
-            raise ValueError(f"Expression too long (max: {MAX_EXPRESSION_LENGTH} characters)")
+        if len(expression) > MAXIMUM_MATHEMATICAL_EXPRESSION_CHARACTER_LIMIT:
+            raise ValueError(f"Expression too long (max: {MAXIMUM_MATHEMATICAL_EXPRESSION_CHARACTER_LIMIT} characters)")
 
         original_expression = expression
 
@@ -1172,9 +1172,9 @@ def compute_expression(expression: str, session_id: str | None = None) -> Calcul
         if session_id:
             session_vars = _session_manager.get_session(session_id) or {}
 
-        cached_result = get_cached_result(original_expression)
+        cached_result = retrieve_cached_computation_result(original_expression)
         if cached_result is not None:
-            return CalculationResult(
+            return MathematicalComputationResult(
                 success=True,
                 expression=original_expression,
                 result=cached_result,
@@ -1184,7 +1184,7 @@ def compute_expression(expression: str, session_id: str | None = None) -> Calcul
         expression = sanitize_expression(expression)
         expression = preprocess_expression(expression)
 
-        tree = get_cached_ast(expression)
+        tree = retrieve_cached_abstract_syntax_tree(expression)
         if tree is None:
             try:
                 tree = ast.parse(expression, mode="eval")
@@ -1201,15 +1201,15 @@ def compute_expression(expression: str, session_id: str | None = None) -> Calcul
             raise
 
         def compute_result(timeout_event=None):
-            with mathematical_computation_memory_limit(MAX_MEMORY_MB):
+            with mathematical_computation_memory_limit(MAXIMUM_MEMORY_USAGE_MEGABYTES):
                 if timeout_event and timeout_event.is_set():
-                    raise TimeoutError(f"Computation exceeded {COMPUTATION_TIMEOUT}s limit")
+                    raise TimeoutError(f"Computation exceeded {MATHEMATICAL_OPERATION_TIMEOUT_SECONDS}s limit")
                 result = evaluate_mathematical_node(tree, session_vars)
                 if timeout_event and timeout_event.is_set():
-                    raise TimeoutError(f"Computation exceeded {COMPUTATION_TIMEOUT}s limit")
+                    raise TimeoutError(f"Computation exceeded {MATHEMATICAL_OPERATION_TIMEOUT_SECONDS}s limit")
                 return result
 
-        with mathematical_computation_timeout(COMPUTATION_TIMEOUT) as timeout_event:
+        with mathematical_computation_timeout(MATHEMATICAL_OPERATION_TIMEOUT_SECONDS) as timeout_event:
             result = compute_result(timeout_event)
 
         if isinstance(result, (int, float, complex)) and abs(result) > 10**200:
@@ -1223,16 +1223,16 @@ def compute_expression(expression: str, session_id: str | None = None) -> Calcul
 
         result_str = format_calculation_output(result, original_expression)
 
-        if len(result_str) > MAX_RESULT_LENGTH:
-            raise ValueError(f"Result too large (max length: {MAX_RESULT_LENGTH})")
+        if len(result_str) > MAXIMUM_COMPUTATION_RESULT_CHARACTER_LIMIT:
+            raise ValueError(f"Result too large (max length: {MAXIMUM_COMPUTATION_RESULT_CHARACTER_LIMIT})")
 
         mathematical_calculation_history.add(original_expression, result_str)
-        store_calculation_result(original_expression, result_str)
+        persist_computation_result_in_cache(original_expression, result_str)
 
         end_time = time.time()
-        monitor_computation_performance(original_expression, start_time, end_time)
+        track_mathematical_operation_performance(original_expression, start_time, end_time)
 
-        return CalculationResult(
+        return MathematicalComputationResult(
             success=True,
             expression=original_expression,
             result=result,
@@ -1247,20 +1247,20 @@ def compute_expression(expression: str, session_id: str | None = None) -> Calcul
         AttributeError,
         TimeoutError,
     ) as e:
-        return CalculationResult(
+        return MathematicalComputationResult(
             success=False,
             expression=expression,
             error={"type": type(e).__name__, "message": str(e)},
         )
     except Exception as e:
-        return CalculationResult(
+        return MathematicalComputationResult(
             success=False,
             expression=expression,
             error={"type": "UnexpectedError", "message": f"Calculation error: {str(e)}"},
         )
 
 
-def evaluate_mathematical_expression(expression: str, session_id: str | None = None) -> str:
+def execute_mathematical_computation(expression: str, session_id: str | None = None) -> str:
     result = compute_expression(expression, session_id)
     if result.success:
         return format_calculation_output(result.result, expression)
@@ -1435,7 +1435,7 @@ def convert_unit(value: float, from_unit: str, to_unit: str, unit_type: str) -> 
         return base_value / conversions[to_unit]
 
 
-class ConversionHistory:
+class UnitConversionHistory:
     def __init__(self, max_size: int = 100):
         self.history: list[dict[str, Any]] = []
         self.max_size = max_size
@@ -1463,7 +1463,7 @@ class ConversionHistory:
             self.history.clear()
 
 
-conversion_history = ConversionHistory()
+conversion_history = UnitConversionHistory()
 
 
 def resolve_unit_alias(unit: str) -> str:
@@ -1731,7 +1731,7 @@ async def get_system_metrics() -> str:
     metrics.append(f"Total Requests (current window): {total_requests}")
 
     history_size = len(mathematical_calculation_history.history)
-    metrics.append(f"History Entries: {history_size}/{MAX_HISTORY_SIZE}")
+    metrics.append(f"History Entries: {history_size}/{CALCULATION_HISTORY_ENTRY_LIMIT}")
 
     cache_size = _expression_cache.size()
     ast_cache_size = _parsed_expression_ast_cache.size()
@@ -1743,15 +1743,15 @@ async def get_system_metrics() -> str:
         f"Active Sessions: {session_stats['active_sessions']}/{session_stats['max_sessions']}"
     )
 
-    metrics.append(f"Security Monitoring: {'Enabled' if ENABLE_AUDIT_LOGGING else 'Disabled'}")
+    metrics.append(f"Security Monitoring: {'Enabled' if SECURITY_AUDIT_LOGGING_ENABLED else 'Disabled'}")
     metrics.append(f"Rate Limiting: {'Enabled' if ENABLE_RATE_LIMITING else 'Disabled'}")
 
     metrics.append("\\nConfiguration:")
-    metrics.append(f"  Max Expression Length: {MAX_EXPRESSION_LENGTH}")
-    metrics.append(f"  Max Expression Depth: {MAX_EXPRESSION_DEPTH}")
-    metrics.append(f"  Max Computation Time: {MAX_COMPUTATION_TIME}s")
-    metrics.append(f"  Computation Timeout: {COMPUTATION_TIMEOUT}s")
-    metrics.append(f"  Memory Limit: {MAX_MEMORY_MB}MB")
+    metrics.append(f"  Max Expression Length: {MAXIMUM_MATHEMATICAL_EXPRESSION_CHARACTER_LIMIT}")
+    metrics.append(f"  Max Expression Depth: {MAXIMUM_AST_NODE_DEPTH_LIMIT}")
+    metrics.append(f"  Max Computation Time: {MAXIMUM_COMPUTATION_DURATION_SECONDS}s")
+    metrics.append(f"  Computation Timeout: {MATHEMATICAL_OPERATION_TIMEOUT_SECONDS}s")
+    metrics.append(f"  Memory Limit: {MAXIMUM_MEMORY_USAGE_MEGABYTES}MB")
     metrics.append(f"  Available Functions: {len(ALL_FUNCTIONS)}")
 
     return "\\n".join(metrics)
@@ -1765,7 +1765,7 @@ async def get_security_status() -> str:
     security_info.append("Rate Limiting:")
     security_info.append(f"  Status: {'Enabled' if ENABLE_RATE_LIMITING else 'Disabled'}")
     security_info.append(f"  Window: {RATE_LIMIT_WINDOW}s")
-    security_info.append(f"  Max Requests: {MAX_REQUESTS_PER_WINDOW}")
+    security_info.append(f"  Max Requests: {MAXIMUM_CLIENT_REQUESTS_PER_TIME_WINDOW}")
 
     with _rate_limiting_lock:
         security_info.append(
@@ -1775,19 +1775,19 @@ async def get_security_status() -> str:
     security_info.append("\\nThreat Detection:")
     security_info.append(f"  Forbidden Patterns: {len(FORBIDDEN_PATTERNS)}")
     security_info.append(f"  Input Hashing: {'Enabled' if ENABLE_INPUT_HASHING else 'Disabled'}")
-    security_info.append(f"  Timeout Protection: {COMPUTATION_TIMEOUT}s")
-    security_info.append(f"  Memory Protection: {MAX_MEMORY_MB}MB")
+    security_info.append(f"  Timeout Protection: {MATHEMATICAL_OPERATION_TIMEOUT_SECONDS}s")
+    security_info.append(f"  Memory Protection: {MAXIMUM_MEMORY_USAGE_MEGABYTES}MB")
 
     security_info.append("\\nAudit Configuration:")
-    security_info.append(f"  Audit Logging: {'Enabled' if ENABLE_AUDIT_LOGGING else 'Disabled'}")
+    security_info.append(f"  Audit Logging: {'Enabled' if SECURITY_AUDIT_LOGGING_ENABLED else 'Disabled'}")
     security_info.append("  Security Logger: Active")
     security_info.append("  Async Logging: Enabled")
 
     security_info.append("\\nResource Limits:")
-    security_info.append(f"  Max Factorial: {MAX_FACTORIAL_INPUT}")
-    security_info.append(f"  Max Power Exponent: {MAX_POWER_EXPONENT}")
-    security_info.append(f"  Max Result Length: {MAX_RESULT_LENGTH}")
-    security_info.append(f"  Max List Size: {MAX_LIST_SIZE}")
+    security_info.append(f"  Max Factorial: {FACTORIAL_COMPUTATION_UPPER_BOUND}")
+    security_info.append(f"  Max Power Exponent: {EXPONENTIATION_SAFETY_THRESHOLD}")
+    security_info.append(f"  Max Result Length: {MAXIMUM_COMPUTATION_RESULT_CHARACTER_LIMIT}")
+    security_info.append(f"  Max List Size: {MAXIMUM_LIST_ELEMENT_COUNT_LIMIT}")
 
     return "\\n".join(security_info)
 
@@ -1810,7 +1810,7 @@ async def get_memory_usage() -> str:
         lines.append(f"  Active Sessions: {stats['active_sessions']}/{MAX_SESSIONS}")
         lines.append("\\nOther Components:")
         lines.append(f"  Rate Limiter Clients: {stats['rate_limiter_clients']}")
-        lines.append(f"  History Entries: {stats['history_entries']}/{MAX_HISTORY_SIZE}")
+        lines.append(f"  History Entries: {stats['history_entries']}/{CALCULATION_HISTORY_ENTRY_LIMIT}")
         return "\\n".join(lines)
     except ImportError:
         return "Error: psutil package required for memory monitoring"
@@ -1988,8 +1988,8 @@ async def delete_session(session_id: str) -> str:
 
 @mcp.tool()
 async def get_calculation_history(limit: int = 10) -> str:
-    if limit > MAX_HISTORY_SIZE:
-        limit = MAX_HISTORY_SIZE
+    if limit > CALCULATION_HISTORY_ENTRY_LIMIT:
+        limit = CALCULATION_HISTORY_ENTRY_LIMIT
 
     history = mathematical_calculation_history.get_recent(limit)
     if not history:
@@ -2010,7 +2010,7 @@ async def clear_history() -> str:
 @mcp.tool()
 async def cleanup_memory() -> str:
     try:
-        cleanup_stats = cleanup_mathematical_caches()
+        cleanup_stats = cleanup_expired_cache_entries()
         lines = ["Memory Cleanup Results:"]
         lines.append(f"Expression cache expired: {cleanup_stats['expression_cache_expired']}")
         lines.append(f"Sessions expired: {cleanup_stats['sessions_expired']}")
@@ -2162,13 +2162,13 @@ def main() -> None:
     setup_graceful_shutdown()
     start_memory_cleanup_timer()
 
-    if ENABLE_AUDIT_LOGGING:
+    if SECURITY_AUDIT_LOGGING_ENABLED:
         async_mathematical_logger.log(
             logging.INFO, "Starting Enhanced MCP Math server with memory management"
         )
         async_mathematical_logger.log(logging.INFO, f"Available functions: {len(ALL_FUNCTIONS)}")
         async_mathematical_logger.log(
-            logging.INFO, f"Security: timeout={COMPUTATION_TIMEOUT}s, memory={MAX_MEMORY_MB}MB"
+            logging.INFO, f"Security: timeout={MATHEMATICAL_OPERATION_TIMEOUT_SECONDS}s, memory={MAXIMUM_MEMORY_USAGE_MEGABYTES}MB"
         )
         async_mathematical_logger.log(
             logging.INFO,
@@ -2178,7 +2178,7 @@ def main() -> None:
     try:
         mcp.run()
     except Exception as e:
-        if ENABLE_AUDIT_LOGGING:
+        if SECURITY_AUDIT_LOGGING_ENABLED:
             async_mathematical_logger.log(
                 logging.CRITICAL, f"Failed to start MCP Math server: {str(e)}"
             )
