@@ -448,18 +448,15 @@ class TestCalculator(unittest.TestCase):
         )
 
     def test_inf_constant(self):
-        # Calculator has safety checks for infinite values
         with self.assertRaises(ValueError, msg="Calculator should handle inf safely"):
             evaluate_mathematical_expression("inf")
-        # Test operations that should raise ValueError for safety
         with self.assertRaises(ValueError):
             evaluate_mathematical_expression("1.0 / 0.0")
-        # Test very large numbers (should either work or raise error safely)
         try:
             result = evaluate_mathematical_expression("10**308")
             self.assertIsInstance(result, str)
         except ValueError:
-            pass  # Large numbers may be restricted for safety
+            pass
 
     def test_nan_constant(self):
         self.assertEqual(evaluate_mathematical_expression("nan"), "nan")
@@ -508,10 +505,7 @@ class TestCalculator(unittest.TestCase):
         )
 
     def test_statistics_functions(self):
-        # Note: Direct list syntax may not be supported, but we can test if functions exist
-        # Test would need to be implemented based on actual calculator syntax support
         try:
-            # Test if mean function exists in calculator
             result = evaluate_mathematical_expression("mean([1, 2, 3, 4, 5])")
             if "Error" in result or "not" in result.lower():
                 self.skipTest("List syntax not supported in calculator")
@@ -670,16 +664,13 @@ class TestCalculator(unittest.TestCase):
         self.assertEqual(evaluate_mathematical_expression("atanh(0)"), "0")
 
     def test_special_values_handling(self):
-        # Test that calculator handles special values safely
         with self.assertRaises(ValueError):
             evaluate_mathematical_expression("inf")
-        # Test nan constant (should work if implemented)
         try:
             result = evaluate_mathematical_expression("nan")
             self.assertEqual(result, "nan")
         except ValueError:
-            pass  # nan might also be restricted for safety
-        # Test division by zero handling
+            pass
         with self.assertRaises(ValueError):
             evaluate_mathematical_expression("1.0 / 0.0")
 
@@ -706,6 +697,177 @@ class TestCalculator(unittest.TestCase):
         result = evaluate_mathematical_expression("factorial(20)")
         expected = str(math.factorial(20))
         self.assertEqual(result, expected)
+
+
+class TestSmartFeatures(unittest.TestCase):
+
+    def test_unit_aliases(self):
+        from src.mcp_mathematics.calculator import resolve_unit_alias
+
+        self.assertEqual(resolve_unit_alias("meters"), "m")
+        self.assertEqual(resolve_unit_alias("kilometres"), "km")
+        self.assertEqual(resolve_unit_alias("pounds"), "lb")
+        self.assertEqual(resolve_unit_alias("fahrenheit"), "F")
+        self.assertEqual(resolve_unit_alias("m"), "m")
+
+    def test_unit_type_detection(self):
+        from src.mcp_mathematics.calculator import detect_unit_type
+
+        self.assertEqual(detect_unit_type("m"), "length")
+        self.assertEqual(detect_unit_type("meters"), "length")
+        self.assertEqual(detect_unit_type("kg"), "mass")
+        self.assertEqual(detect_unit_type("s"), "time")
+        self.assertEqual(detect_unit_type("C"), "temperature")
+        self.assertEqual(detect_unit_type("L"), "volume")
+        self.assertIsNone(detect_unit_type("unknown"))
+
+    def test_scientific_notation(self):
+        from src.mcp_mathematics.calculator import format_scientific_notation
+
+        self.assertEqual(format_scientific_notation(1.23e-12), "1.2300e-12")
+        self.assertEqual(format_scientific_notation(5.67e15), "5.6700e+15")
+        self.assertEqual(format_scientific_notation(123.456), "123.456")
+        self.assertEqual(format_scientific_notation(1.23e-12, precision=2), "1.23e-12")
+
+    def test_compound_unit_parsing(self):
+        from src.mcp_mathematics.calculator import parse_compound_unit
+
+        numerator, denominator = parse_compound_unit("m/s")
+        self.assertEqual(numerator, ["m"])
+        self.assertEqual(denominator, ["s"])
+
+        numerator, denominator = parse_compound_unit("kg·m/s^2")
+        self.assertEqual(numerator, ["kg", "m"])
+        self.assertEqual(denominator, ["s", "s"])
+
+    def test_conversion_with_history(self):
+        from src.mcp_mathematics.calculator import convert_with_history, conversion_history
+
+        conversion_history.clear()
+        result = convert_with_history(100, "meters", "feet", precision=2)
+        self.assertAlmostEqual(result, 328.08, places=0)
+
+        history = conversion_history.get_recent(1)
+        self.assertEqual(len(history), 1)
+        self.assertEqual(history[0]["value"], 100)
+        self.assertEqual(history[0]["from_unit"], "m")
+
+
+class TestFinancialCalculations(unittest.TestCase):
+
+    def test_percentage_calculations(self):
+        from src.mcp_mathematics.calculator import (
+            calculate_percentage,
+            calculate_percentage_of,
+            calculate_percentage_change,
+        )
+
+        self.assertEqual(calculate_percentage(100, 10), 10)
+        self.assertEqual(calculate_percentage(250, 20), 50)
+        self.assertEqual(calculate_percentage_of(25, 100), 25)
+        self.assertEqual(calculate_percentage_of(50, 200), 25)
+        self.assertEqual(calculate_percentage_change(100, 150), 50)
+        self.assertEqual(calculate_percentage_change(200, 100), -50)
+
+        with self.assertRaises(ValueError):
+            calculate_percentage_of(10, 0)
+        with self.assertRaises(ValueError):
+            calculate_percentage_change(0, 100)
+
+    def test_split_bill(self):
+        from src.mcp_mathematics.calculator import split_bill
+
+        result = split_bill(100, 4, 15)
+        self.assertEqual(result["total"], 100)
+        self.assertEqual(result["tip_amount"], 15)
+        self.assertEqual(result["total_with_tip"], 115)
+        self.assertEqual(result["per_person"], 28.75)
+
+        with self.assertRaises(ValueError):
+            split_bill(100, 0)
+
+    def test_tax_calculations(self):
+        from src.mcp_mathematics.calculator import calculate_tax
+
+        result = calculate_tax(100, 10)
+        self.assertEqual(result["tax_amount"], 10)
+        self.assertEqual(result["total_amount"], 110)
+
+        result = calculate_tax(110, 10, is_inclusive=True)
+        self.assertAlmostEqual(result["base_amount"], 100, places=1)
+        self.assertAlmostEqual(result["tax_amount"], 10, places=1)
+
+    def test_interest_calculations(self):
+        from src.mcp_mathematics.calculator import (
+            calculate_compound_interest,
+            calculate_simple_interest,
+        )
+
+        result = calculate_compound_interest(1000, 5, 10, 12)
+        self.assertAlmostEqual(result["amount"], 1647.01, places=0)
+        self.assertAlmostEqual(result["interest"], 647.01, places=0)
+
+        result = calculate_simple_interest(1000, 5, 10)
+        self.assertEqual(result["interest"], 500)
+        self.assertEqual(result["amount"], 1500)
+
+    def test_loan_payment(self):
+        from src.mcp_mathematics.calculator import calculate_loan_payment
+
+        result = calculate_loan_payment(100000, 5, 30, 12)
+        self.assertAlmostEqual(result["payment"], 536.82, places=0)
+        self.assertAlmostEqual(result["total_paid"], 193255.78, delta=10)
+
+        result = calculate_loan_payment(10000, 0, 5)
+        self.assertEqual(result["payment"], 166.66666666666666)
+        self.assertEqual(result["interest_paid"], 0)
+
+    def test_discount_markup(self):
+        from src.mcp_mathematics.calculator import calculate_discount, calculate_markup
+
+        result = calculate_discount(100, 20)
+        self.assertEqual(result["discount_amount"], 20)
+        self.assertEqual(result["final_price"], 80)
+
+        result = calculate_markup(50, 100)
+        self.assertEqual(result["markup_amount"], 50)
+        self.assertEqual(result["selling_price"], 100)
+
+
+class TestUnitConversions(unittest.TestCase):
+
+    def test_length_conversions(self):
+        from src.mcp_mathematics.calculator import convert_unit
+
+        self.assertAlmostEqual(convert_unit(1, "m", "km", "length"), 0.001, places=3)
+        self.assertAlmostEqual(convert_unit(1, "km", "mi", "length"), 0.621371, places=3)
+        self.assertAlmostEqual(convert_unit(1, "ft", "in", "length"), 12, places=1)
+
+    def test_mass_conversions(self):
+        from src.mcp_mathematics.calculator import convert_unit
+
+        self.assertAlmostEqual(convert_unit(1, "kg", "g", "mass"), 1000, places=1)
+        self.assertAlmostEqual(convert_unit(1, "kg", "lb", "mass"), 2.20462, places=3)
+        self.assertAlmostEqual(convert_unit(1, "lb", "oz", "mass"), 16, places=1)
+
+    def test_temperature_conversions(self):
+        from src.mcp_mathematics.calculator import convert_unit
+
+        self.assertEqual(convert_unit(0, "C", "F", "temperature"), 32)
+        self.assertEqual(convert_unit(100, "C", "F", "temperature"), 212)
+        self.assertEqual(convert_unit(0, "C", "K", "temperature"), 273.15)
+
+    def test_edge_cases(self):
+        from src.mcp_mathematics.calculator import convert_unit
+
+        self.assertEqual(convert_unit(0, "m", "km", "length"), 0)
+        self.assertEqual(convert_unit(0, "C", "F", "temperature"), 32)
+
+        self.assertEqual(convert_unit(-10, "m", "km", "length"), -0.01)
+        self.assertEqual(convert_unit(-40, "C", "F", "temperature"), -40)
+
+        with self.assertRaises(ValueError):
+            convert_unit(1, "invalid_unit", "m", "length")
 
 
 if __name__ == "__main__":

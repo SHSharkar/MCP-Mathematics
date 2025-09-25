@@ -480,72 +480,155 @@ UNIT_CONVERSIONS = {
 }
 
 UNIT_ALIASES = {
-    "meters": "m", "meter": "m", "metres": "m", "metre": "m",
-    "kilometers": "km", "kilometer": "km", "kilometres": "km", "kilometre": "km",
-    "centimeters": "cm", "centimeter": "cm", "centimetres": "cm", "centimetre": "cm",
-    "millimeters": "mm", "millimeter": "mm", "millimetres": "mm", "millimetre": "mm",
-    "miles": "mi", "mile": "mi",
-    "yards": "yd", "yard": "yd",
-    "feet": "ft", "foot": "ft",
-    "inches": "in", "inch": "in",
-    "kilograms": "kg", "kilogram": "kg",
-    "grams": "g", "gram": "g",
-    "milligrams": "mg", "milligram": "mg",
-    "pounds": "lb", "pound": "lb", "lbs": "lb",
-    "ounces": "oz", "ounce": "oz",
+    "meters": "m",
+    "meter": "m",
+    "metres": "m",
+    "metre": "m",
+    "kilometers": "km",
+    "kilometer": "km",
+    "kilometres": "km",
+    "kilometre": "km",
+    "centimeters": "cm",
+    "centimeter": "cm",
+    "centimetres": "cm",
+    "centimetre": "cm",
+    "millimeters": "mm",
+    "millimeter": "mm",
+    "millimetres": "mm",
+    "millimetre": "mm",
+    "miles": "mi",
+    "mile": "mi",
+    "yards": "yd",
+    "yard": "yd",
+    "feet": "ft",
+    "foot": "ft",
+    "inches": "in",
+    "inch": "in",
+    "kilograms": "kg",
+    "kilogram": "kg",
+    "grams": "g",
+    "gram": "g",
+    "milligrams": "mg",
+    "milligram": "mg",
+    "pounds": "lb",
+    "pound": "lb",
+    "lbs": "lb",
+    "ounces": "oz",
+    "ounce": "oz",
     "tons": "ton",
-    "seconds": "s", "second": "s", "sec": "s", "secs": "s",
-    "milliseconds": "ms", "millisecond": "ms", "millisec": "ms", "millisecs": "ms",
-    "microseconds": "us", "microsecond": "us", "microsec": "us", "microsecs": "us",
-    "nanoseconds": "ns", "nanosecond": "ns", "nanosec": "ns", "nanosecs": "ns",
-    "minutes": "min", "minute": "min", "mins": "min",
-    "hours": "h", "hour": "h", "hrs": "h", "hr": "h",
-    "days": "d", "day": "d",
-    "weeks": "wk", "week": "wk",
-    "months": "mo", "month": "mo",
-    "years": "yr", "year": "yr", "yrs": "yr",
+    "seconds": "s",
+    "second": "s",
+    "sec": "s",
+    "secs": "s",
+    "milliseconds": "ms",
+    "millisecond": "ms",
+    "millisec": "ms",
+    "millisecs": "ms",
+    "microseconds": "us",
+    "microsecond": "us",
+    "microsec": "us",
+    "microsecs": "us",
+    "nanoseconds": "ns",
+    "nanosecond": "ns",
+    "nanosec": "ns",
+    "nanosecs": "ns",
+    "minutes": "min",
+    "minute": "min",
+    "mins": "min",
+    "hours": "h",
+    "hour": "h",
+    "hrs": "h",
+    "hr": "h",
+    "days": "d",
+    "day": "d",
+    "weeks": "wk",
+    "week": "wk",
+    "months": "mo",
+    "month": "mo",
+    "years": "yr",
+    "year": "yr",
+    "yrs": "yr",
     "decades": "decade",
     "centuries": "century",
-    "celsius": "C", "centigrade": "C",
-    "fahrenheit": "F", "fahr": "F",
+    "celsius": "C",
+    "centigrade": "C",
+    "fahrenheit": "F",
+    "fahr": "F",
     "kelvin": "K",
-    "liters": "L", "liter": "L", "litres": "L", "litre": "L",
-    "milliliters": "mL", "milliliter": "mL", "millilitres": "mL", "millilitre": "mL",
-    "gallons": "gal", "gallon": "gal",
-    "quarts": "qt", "quart": "qt",
-    "pints": "pt", "pint": "pt",
+    "liters": "L",
+    "liter": "L",
+    "litres": "L",
+    "litre": "L",
+    "milliliters": "mL",
+    "milliliter": "mL",
+    "millilitres": "mL",
+    "millilitre": "mL",
+    "gallons": "gal",
+    "gallon": "gal",
+    "quarts": "qt",
+    "quart": "qt",
+    "pints": "pt",
+    "pint": "pt",
     "cups": "cup",
-    "tablespoons": "tbsp", "tablespoon": "tbsp",
-    "teaspoons": "tsp", "teaspoon": "tsp",
-    "bytes": "B", "byte": "B",
-    "kilobytes": "KB", "kilobyte": "KB",
-    "megabytes": "MB", "megabyte": "MB",
-    "gigabytes": "GB", "gigabyte": "GB",
-    "terabytes": "TB", "terabyte": "TB",
-    "petabytes": "PB", "petabyte": "PB",
+    "tablespoons": "tbsp",
+    "tablespoon": "tbsp",
+    "teaspoons": "tsp",
+    "teaspoon": "tsp",
+    "bytes": "B",
+    "byte": "B",
+    "kilobytes": "KB",
+    "kilobyte": "KB",
+    "megabytes": "MB",
+    "megabyte": "MB",
+    "gigabytes": "GB",
+    "gigabyte": "GB",
+    "terabytes": "TB",
+    "terabyte": "TB",
+    "petabytes": "PB",
+    "petabyte": "PB",
     "bits": "bit",
-    "kilobits": "Kbit", "kilobit": "Kbit",
-    "megabits": "Mbit", "megabit": "Mbit",
-    "gigabits": "Gbit", "gigabit": "Gbit",
-    "pascals": "Pa", "pascal": "Pa",
-    "kilopascals": "kPa", "kilopascal": "kPa",
-    "megapascals": "MPa", "megapascal": "MPa",
-    "atmospheres": "atm", "atmosphere": "atm",
+    "kilobits": "Kbit",
+    "kilobit": "Kbit",
+    "megabits": "Mbit",
+    "megabit": "Mbit",
+    "gigabits": "Gbit",
+    "gigabit": "Gbit",
+    "pascals": "Pa",
+    "pascal": "Pa",
+    "kilopascals": "kPa",
+    "kilopascal": "kPa",
+    "megapascals": "MPa",
+    "megapascal": "MPa",
+    "atmospheres": "atm",
+    "atmosphere": "atm",
     "bars": "bar",
-    "millibars": "mbar", "millibar": "mbar",
-    "joules": "J", "joule": "J",
-    "kilojoules": "kJ", "kilojoule": "kJ",
-    "megajoules": "MJ", "megajoule": "MJ",
-    "calories": "cal", "calorie": "cal",
-    "kilocalories": "kcal", "kilocalorie": "kcal",
-    "watts": "W", "watt": "W",
-    "kilowatts": "kW", "kilowatt": "kW",
-    "megawatts": "MW", "megawatt": "MW",
+    "millibars": "mbar",
+    "millibar": "mbar",
+    "joules": "J",
+    "joule": "J",
+    "kilojoules": "kJ",
+    "kilojoule": "kJ",
+    "megajoules": "MJ",
+    "megajoule": "MJ",
+    "calories": "cal",
+    "calorie": "cal",
+    "kilocalories": "kcal",
+    "kilocalorie": "kcal",
+    "watts": "W",
+    "watt": "W",
+    "kilowatts": "kW",
+    "kilowatt": "kW",
+    "megawatts": "MW",
+    "megawatt": "MW",
     "horsepower": "hp",
-    "newtons": "N", "newton": "N",
-    "kilonewtons": "kN", "kilonewton": "kN",
-    "degrees": "deg", "degree": "deg",
-    "radians": "rad", "radian": "rad",
+    "newtons": "N",
+    "newton": "N",
+    "kilonewtons": "kN",
+    "kilonewton": "kN",
+    "degrees": "deg",
+    "degree": "deg",
+    "radians": "rad",
+    "radian": "rad",
     "hertz": "Hz",
     "kilohertz": "kHz",
     "megahertz": "MHz",
@@ -913,10 +996,12 @@ def compute_expression(expression: str, session_id: str | None = None) -> Calcul
 
         if isinstance(result, (int, float, complex)) and abs(result) > 10**200:
             result_magnitude = abs(result)
-            if result_magnitude == float('inf'):
+            if result_magnitude == float("inf"):
                 raise ValueError("Result is infinite - consider using smaller values")
             else:
-                raise ValueError(f"Result magnitude ({result_magnitude:.2e}) exceeds safe computational limits")
+                raise ValueError(
+                    f"Result magnitude ({result_magnitude:.2e}) exceeds safe computational limits"
+                )
 
         result_str = format_calculation_output(result, original_expression)
 
@@ -988,9 +1073,14 @@ def format_calculation_output(result: Any, original_expression: str) -> str:
     if isinstance(result, (float, int)):
         has_division = "/" in original_expression or "÷" in original_expression
         has_float_operand = "." in original_expression
-        has_statistics_func = any(func in original_expression for func in ["mean", "median", "stdev", "pstdev", "variance", "pvariance"])
+        has_statistics_func = any(
+            func in original_expression
+            for func in ["mean", "median", "stdev", "pstdev", "variance", "pvariance"]
+        )
 
-        is_integer_result = isinstance(result, int) or (isinstance(result, float) and result.is_integer())
+        is_integer_result = isinstance(result, int) or (
+            isinstance(result, float) and result.is_integer()
+        )
 
         if "nextafter" in original_expression or "ulp" in original_expression:
             return f"{result:.17g}"
@@ -1146,7 +1236,7 @@ class ConversionHistory:
                 "from_unit": from_unit,
                 "to_unit": to_unit,
                 "result": result,
-                "timestamp": datetime.datetime.now().isoformat()
+                "timestamp": datetime.datetime.now().isoformat(),
             }
             self.history.append(entry)
             if len(self.history) > self.max_size:
@@ -1257,7 +1347,7 @@ def split_bill(total: float, people: int, tip_percent: float = 0) -> dict[str, f
         "tip_amount": tip_amount,
         "total_with_tip": total_with_tip,
         "per_person": per_person,
-        "people": people
+        "people": people,
     }
 
 
@@ -1273,7 +1363,7 @@ def calculate_tax(amount: float, tax_rate: float, is_inclusive: bool = False) ->
         "base_amount": base_amount,
         "tax_rate": tax_rate,
         "tax_amount": tax_amount,
-        "total_amount": base_amount + tax_amount
+        "total_amount": base_amount + tax_amount,
     }
 
 
@@ -1283,15 +1373,12 @@ def calculate_tip(amount: float, tip_percent: float) -> dict[str, float]:
         "base_amount": amount,
         "tip_percent": tip_percent,
         "tip_amount": tip_amount,
-        "total_amount": amount + tip_amount
+        "total_amount": amount + tip_amount,
     }
 
 
 def calculate_compound_interest(
-    principal: float,
-    rate: float,
-    time: float,
-    compounds_per_year: int = 1
+    principal: float, rate: float, time: float, compounds_per_year: int = 1
 ) -> dict[str, float]:
     rate_decimal = rate / 100
     amount = principal * (1 + rate_decimal / compounds_per_year) ** (compounds_per_year * time)
@@ -1303,15 +1390,11 @@ def calculate_compound_interest(
         "time": time,
         "compounds_per_year": compounds_per_year,
         "interest": interest,
-        "amount": amount
+        "amount": amount,
     }
 
 
-def calculate_simple_interest(
-    principal: float,
-    rate: float,
-    time: float
-) -> dict[str, float]:
+def calculate_simple_interest(principal: float, rate: float, time: float) -> dict[str, float]:
     rate_decimal = rate / 100
     interest = principal * rate_decimal * time
     amount = principal + interest
@@ -1321,15 +1404,12 @@ def calculate_simple_interest(
         "rate": rate,
         "time": time,
         "interest": interest,
-        "amount": amount
+        "amount": amount,
     }
 
 
 def calculate_loan_payment(
-    principal: float,
-    annual_rate: float,
-    years: float,
-    payments_per_year: int = 12
+    principal: float, annual_rate: float, years: float, payments_per_year: int = 12
 ) -> dict[str, float]:
     if annual_rate == 0:
         payment = principal / (years * payments_per_year)
@@ -1349,7 +1429,7 @@ def calculate_loan_payment(
         "payments_per_year": payments_per_year,
         "payment": payment,
         "total_paid": total_paid,
-        "interest_paid": interest_paid
+        "interest_paid": interest_paid,
     }
 
 
@@ -1361,7 +1441,7 @@ def calculate_discount(original_price: float, discount_percent: float) -> dict[s
         "original_price": original_price,
         "discount_percent": discount_percent,
         "discount_amount": discount_amount,
-        "final_price": final_price
+        "final_price": final_price,
     }
 
 
@@ -1373,7 +1453,7 @@ def calculate_markup(cost: float, markup_percent: float) -> dict[str, float]:
         "cost": cost,
         "markup_percent": markup_percent,
         "markup_amount": markup_amount,
-        "selling_price": selling_price
+        "selling_price": selling_price,
     }
 
 
