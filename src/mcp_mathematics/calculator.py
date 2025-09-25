@@ -1197,7 +1197,7 @@ def compute_expression(expression: str, session_id: str | None = None) -> Calcul
                 raise ValueError("Expression contains unsupported operations")
         except Exception as e:
             if "unsupported operations" in str(e).lower():
-                raise ValueError(f"Unsupported mathematical operation detected: {str(e)}")
+                raise ValueError(f"Unsupported mathematical operation detected: {str(e)}") from e
             raise
 
         def compute_result(timeout_event=None):
