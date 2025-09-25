@@ -869,6 +869,396 @@ class TestUnitConversions(unittest.TestCase):
         with self.assertRaises(ValueError):
             convert_unit(1, "invalid_unit", "m", "length")
 
+    def test_complex_nested_expressions(self):
+        result = float(evaluate_mathematical_expression("sin(cos(tan(pi/6)))"))
+        expected = math.sin(math.cos(math.tan(math.pi/6)))
+        self.assertAlmostEqual(result, expected, places=10)
+
+        result = float(evaluate_mathematical_expression("log(exp(2) * exp(3))"))
+        self.assertAlmostEqual(result, 5, places=10)
+
+        result = float(evaluate_mathematical_expression("sqrt(16) + sqrt(9) * sqrt(4)"))
+        self.assertEqual(result, 10)
+
+    def test_complex_trigonometric_identities(self):
+        result = float(evaluate_mathematical_expression("sin(pi/3)^2 + cos(pi/3)^2"))
+        self.assertAlmostEqual(result, 1, places=10)
+
+        angle = math.pi/4
+        result = float(evaluate_mathematical_expression(f"tan({angle})"))
+        expected = float(evaluate_mathematical_expression(f"sin({angle})/cos({angle})"))
+        self.assertAlmostEqual(result, expected, places=10)
+
+    def test_advanced_logarithms(self):
+        result = float(evaluate_mathematical_expression("log(256)/log(2)"))
+        self.assertAlmostEqual(result, 8, places=5)
+
+        result = float(evaluate_mathematical_expression("log(1000)/log(10)"))
+        self.assertAlmostEqual(result, 3, places=5)
+
+        result = float(evaluate_mathematical_expression("log(exp(5))"))
+        self.assertAlmostEqual(result, 5, places=5)
+
+    def test_factorial_and_combinatorics(self):
+        result = float(evaluate_mathematical_expression("factorial(6)"))
+        self.assertAlmostEqual(result, 720, places=5)
+
+        result = float(evaluate_mathematical_expression("factorial(10)/(factorial(10-3))"))
+        self.assertAlmostEqual(result, 720, places=5)
+
+        result = float(evaluate_mathematical_expression("factorial(10)/(factorial(3)*factorial(10-3))"))
+        self.assertAlmostEqual(result, 120, places=5)
+
+    def test_hyperbolic_complex(self):
+        result = float(evaluate_mathematical_expression("sinh(2) + cosh(2)"))
+        expected = math.sinh(2) + math.cosh(2)
+        self.assertAlmostEqual(result, expected, places=10)
+
+        result = float(evaluate_mathematical_expression("tanh(1) * tanh(2)"))
+        expected = math.tanh(1) * math.tanh(2)
+        self.assertAlmostEqual(result, expected, places=10)
+
+    def test_modulo_operations(self):
+        result = float(evaluate_mathematical_expression("17 % 5"))
+        self.assertEqual(result, 2)
+
+        result = float(evaluate_mathematical_expression("100 % 7"))
+        self.assertEqual(result, 2)
+
+        result = float(evaluate_mathematical_expression("25 % 4"))
+        self.assertEqual(result, 1)
+
+    def test_floor_ceil_functions(self):
+        result = float(evaluate_mathematical_expression("floor(3.7)"))
+        self.assertEqual(result, 3)
+
+        result = float(evaluate_mathematical_expression("ceil(3.2)"))
+        self.assertEqual(result, 4)
+
+        result = float(evaluate_mathematical_expression("floor(-2.3)"))
+        self.assertEqual(result, -3)
+
+    def test_gcd_lcm_calculations(self):
+        result = float(evaluate_mathematical_expression("gcd(48, 18)"))
+        self.assertEqual(result, 6)
+
+        result = float(evaluate_mathematical_expression("lcm(12, 15)"))
+        self.assertEqual(result, 60)
+
+        result = float(evaluate_mathematical_expression("gcd(100, 75)"))
+        self.assertEqual(result, 25)
+
+    def test_complex_unit_chains(self):
+        from src.mcp_mathematics.calculator import convert_unit
+
+        meters_to_inches = convert_unit(1, "m", "in", "length")
+        self.assertAlmostEqual(meters_to_inches, 39.3701, places=2)
+
+        kg_to_oz = convert_unit(1, "kg", "oz", "mass")
+        self.assertAlmostEqual(kg_to_oz, 35.274, places=2)
+
+        hours_to_ms = convert_unit(1, "h", "ms", "time")
+        self.assertEqual(hours_to_ms, 3600000)
+
+    def test_temperature_round_trips(self):
+        from src.mcp_mathematics.calculator import convert_unit
+
+        celsius = 25
+        to_fahrenheit = convert_unit(celsius, "C", "F", "temperature")
+        back_to_celsius = convert_unit(to_fahrenheit, "F", "C", "temperature")
+        self.assertAlmostEqual(back_to_celsius, celsius, places=10)
+
+        kelvin = 300
+        to_celsius = convert_unit(kelvin, "K", "C", "temperature")
+        back_to_kelvin = convert_unit(to_celsius, "C", "K", "temperature")
+        self.assertAlmostEqual(back_to_kelvin, kelvin, places=10)
+
+    def test_area_volume_conversions(self):
+        from src.mcp_mathematics.calculator import convert_unit
+
+        sqm_to_sqft = convert_unit(1, "m2", "ft2", "area")
+        self.assertAlmostEqual(sqm_to_sqft, 10.7639, places=2)
+
+        liters_to_gallons = convert_unit(1, "L", "gal", "volume")
+        self.assertAlmostEqual(liters_to_gallons, 0.264172, places=4)
+
+        ml_to_cup = convert_unit(250, "mL", "cup", "volume")
+        self.assertAlmostEqual(ml_to_cup, 1.05669, places=3)
+
+    def test_energy_power_conversions(self):
+        from src.mcp_mathematics.calculator import convert_unit
+
+        joules_to_calories = convert_unit(1000, "J", "cal", "energy")
+        self.assertAlmostEqual(joules_to_calories, 239.006, places=2)
+
+        watts_to_hp = convert_unit(1000, "W", "hp", "power")
+        self.assertAlmostEqual(watts_to_hp, 1.34102, places=3)
+
+        kwh_to_joules = convert_unit(1, "kWh", "J", "energy")
+        self.assertEqual(kwh_to_joules, 3600000)
+
+    def test_pressure_force_conversions(self):
+        from src.mcp_mathematics.calculator import convert_unit
+
+        pa_to_psi = convert_unit(100000, "Pa", "psi", "pressure")
+        self.assertAlmostEqual(pa_to_psi, 14.5038, places=2)
+
+        newtons_to_lbf = convert_unit(100, "N", "lbf", "force")
+        self.assertAlmostEqual(newtons_to_lbf, 22.4809, places=2)
+
+        bar_to_atm = convert_unit(1, "bar", "atm", "pressure")
+        self.assertAlmostEqual(bar_to_atm, 0.98692, places=3)
+
+    def test_compound_interest_variations(self):
+        from src.mcp_mathematics.calculator import calculate_compound_interest
+
+        result = calculate_compound_interest(5000, 8, 10, 4)
+        self.assertAlmostEqual(result["amount"], 11040.20, places=2)
+
+        result = calculate_compound_interest(1000, 12, 5, 12)
+        self.assertAlmostEqual(result["amount"], 1816.70, places=2)
+
+        result = calculate_compound_interest(10000, 5, 20, 1)
+        self.assertAlmostEqual(result["amount"], 26532.98, places=2)
+
+    def test_loan_payment_scenarios(self):
+        from src.mcp_mathematics.calculator import calculate_loan_payment
+
+        result = calculate_loan_payment(200000, 4.5, 30)
+        self.assertAlmostEqual(result["payment"], 1013.37, places=2)
+
+        result = calculate_loan_payment(30000, 6, 5)
+        self.assertAlmostEqual(result["payment"], 579.98, places=2)
+
+        result = calculate_loan_payment(500000, 3.5, 15)
+        self.assertAlmostEqual(result["payment"], 3574.41, places=2)
+
+    def test_percentage_operations(self):
+        from src.mcp_mathematics.calculator import calculate_percentage_change, calculate_percentage
+
+        change = calculate_percentage_change(100, 150)
+        self.assertEqual(change, 50)
+
+        change = calculate_percentage_change(200, 50)
+        self.assertEqual(change, -75)
+
+        result = calculate_percentage(100, 25)
+        self.assertEqual(result, 25)
+
+        result = calculate_percentage(100, 15)
+        self.assertEqual(result, 15)
+
+    def test_tax_tip_calculations(self):
+        from src.mcp_mathematics.calculator import calculate_tax, calculate_tip
+
+        tax_result = calculate_tax(100, 8.5)
+        self.assertEqual(tax_result["tax_amount"], 8.5)
+
+        total_with_tax = calculate_tax(250, 10, is_inclusive=False)
+        self.assertEqual(total_with_tax["total_amount"], 275)
+
+        tip_result = calculate_tip(80, 20)
+        self.assertEqual(tip_result["tip_amount"], 16)
+
+        total_with_tip = calculate_tip(100, 18)
+        self.assertEqual(total_with_tip["total_amount"], 118)
+
+    def test_discount_markup_calculations(self):
+        from src.mcp_mathematics.calculator import calculate_discount, calculate_markup
+
+        discount_result = calculate_discount(100, 25)
+        self.assertEqual(discount_result["final_price"], 75)
+
+        discount_result = calculate_discount(80, 10)
+        self.assertEqual(discount_result["final_price"], 72)
+
+        markup_result = calculate_markup(50, 40)
+        self.assertEqual(markup_result["selling_price"], 70)
+
+        markup_result = calculate_markup(100, 15)
+        self.assertEqual(markup_result["selling_price"], 115)
+
+    def test_bill_splitting_scenarios(self):
+        from src.mcp_mathematics.calculator import split_bill
+
+        result = split_bill(120, 4)
+        self.assertEqual(result["per_person"], 30)
+
+        result = split_bill(200, 5, tip_percent=20)
+        self.assertEqual(result["per_person"], 48)
+
+        result = split_bill(150, 3, tip_percent=18)
+        self.assertEqual(result["per_person"], 59)
+
+    def test_speed_conversion_chains(self):
+        from src.mcp_mathematics.calculator import convert_unit
+
+        ms_to_mph = convert_unit(10, "m/s", "mph", "speed")
+        self.assertAlmostEqual(ms_to_mph, 22.3694, places=2)
+
+        kmh_to_knot = convert_unit(100, "km/h", "knot", "speed")
+        self.assertAlmostEqual(kmh_to_knot, 53.9957, places=2)
+
+        fps_to_ms = convert_unit(100, "ft/s", "m/s", "speed")
+        self.assertAlmostEqual(fps_to_ms, 30.48, places=2)
+
+    def test_data_storage_conversions(self):
+        from src.mcp_mathematics.calculator import convert_unit
+
+        gb_to_mb = convert_unit(5, "GB", "MB", "data")
+        self.assertEqual(gb_to_mb, 5000)
+
+        tb_to_gb = convert_unit(2, "TB", "GB", "data")
+        self.assertEqual(tb_to_gb, 2000)
+
+        mb_to_bits = convert_unit(1, "MB", "bit", "data")
+        self.assertEqual(mb_to_bits, 8000000)
+
+    def test_frequency_angle_conversions(self):
+        from src.mcp_mathematics.calculator import convert_unit
+
+        hz_to_khz = convert_unit(5000, "Hz", "kHz", "frequency")
+        self.assertAlmostEqual(hz_to_khz, 5, places=10)
+
+        rpm_to_hz = convert_unit(3600, "rpm", "Hz", "frequency")
+        self.assertAlmostEqual(round(rpm_to_hz), 60)
+
+        deg_to_rad = convert_unit(180, "deg", "rad", "angle")
+        self.assertAlmostEqual(deg_to_rad, math.pi, places=5)
+
+        grad_to_deg = convert_unit(100, "grad", "deg", "angle")
+        self.assertAlmostEqual(grad_to_deg, 90, places=10)
+
+    def test_fuel_economy_conversions(self):
+        from src.mcp_mathematics.calculator import convert_unit
+
+        mpg_to_lper100km = convert_unit(30, "mpg", "L/100km", "fuel_economy")
+        self.assertAlmostEqual(mpg_to_lper100km, 7.84049, places=1)
+
+        lper100km_to_mpg = convert_unit(8, "L/100km", "mpg", "fuel_economy")
+        self.assertAlmostEqual(lper100km_to_mpg, 29.4018, places=1)
+
+        km_per_l_to_mpg = convert_unit(10, "km/L", "mpg", "fuel_economy")
+        self.assertAlmostEqual(km_per_l_to_mpg, 23.52, places=1)
+
+    def test_smart_unit_detection(self):
+        from src.mcp_mathematics.calculator import detect_unit_type
+
+        self.assertEqual(detect_unit_type("meter"), "length")
+        self.assertEqual(detect_unit_type("kg"), "mass")
+        self.assertEqual(detect_unit_type("celsius"), "temperature")
+        self.assertEqual(detect_unit_type("joule"), "energy")
+        self.assertEqual(detect_unit_type("pascal"), "pressure")
+
+    def test_unit_alias_resolution(self):
+        from src.mcp_mathematics.calculator import resolve_unit_alias
+
+        self.assertEqual(resolve_unit_alias("meters"), "m")
+        self.assertEqual(resolve_unit_alias("kilograms"), "kg")
+        self.assertEqual(resolve_unit_alias("celsius"), "C")
+        self.assertEqual(resolve_unit_alias("pounds"), "lb")
+        self.assertEqual(resolve_unit_alias("ounces"), "oz")
+
+    def test_compound_unit_parsing(self):
+        pass
+
+    def test_conversion_history_tracking(self):
+        from src.mcp_mathematics.calculator import convert_with_history
+
+        result = convert_with_history(100, "m", "ft")
+        self.assertAlmostEqual(result, 328.084, places=2)
+
+        result = convert_with_history(50, "kg", "lb")
+        self.assertAlmostEqual(result, 110.231, places=2)
+
+    def test_scientific_notation_handling(self):
+        from src.mcp_mathematics.calculator import format_scientific_notation
+
+        formatted = format_scientific_notation(1234567)
+        self.assertEqual(str(formatted), "1234567")
+
+        formatted = format_scientific_notation(0.00001234)
+        self.assertEqual(formatted, "1.234e-05")
+
+        formatted = format_scientific_notation(5.67e23)
+        self.assertEqual(formatted, "5.6700e+23")
+
+    def test_special_mathematical_constants(self):
+        pi_value = float(evaluate_mathematical_expression("pi"))
+        self.assertAlmostEqual(pi_value, math.pi, places=10)
+
+        e_value = float(evaluate_mathematical_expression("e"))
+        self.assertAlmostEqual(e_value, math.e, places=10)
+
+        tau_value = float(evaluate_mathematical_expression("tau"))
+        self.assertAlmostEqual(tau_value, 2 * math.pi, places=10)
+
+        phi_value = float(evaluate_mathematical_expression("phi"))
+        self.assertAlmostEqual(phi_value, (1 + math.sqrt(5)) / 2, places=10)
+
+    def test_complex_financial_scenarios(self):
+        from src.mcp_mathematics.calculator import calculate_compound_interest, calculate_simple_interest
+
+        compound = calculate_compound_interest(10000, 6, 5, 12)
+        simple = calculate_simple_interest(10000, 6, 5)
+        difference = compound["amount"] - (10000 + simple["interest"])
+        self.assertGreater(difference, 0)
+
+        monthly_compound = calculate_compound_interest(1000, 12, 1, 12)
+        yearly_compound = calculate_compound_interest(1000, 12, 1, 1)
+        self.assertGreater(monthly_compound["amount"], yearly_compound["amount"])
+
+    def test_advanced_percentage_calculations(self):
+        from src.mcp_mathematics.calculator import calculate_percentage, calculate_percentage_change
+
+        percent = calculate_percentage(200, 25)
+        self.assertEqual(percent, 50)
+
+        percent = calculate_percentage(150, 18)
+        self.assertEqual(percent, 27)
+
+        increase = calculate_percentage_change(80, 120)
+        self.assertEqual(increase, 50)
+
+        decrease = calculate_percentage_change(100, 75)
+        self.assertEqual(decrease, -25)
+
+    def test_mixed_operations(self):
+        result = float(evaluate_mathematical_expression("sin(pi/4) * sqrt(2)"))
+        self.assertAlmostEqual(result, 1, places=5)
+
+        result = float(evaluate_mathematical_expression("log(100) / log(10)"))
+        self.assertAlmostEqual(result, 2, places=5)
+
+        result = float(evaluate_mathematical_expression("exp(log(5) + log(3))"))
+        self.assertAlmostEqual(result, 15, places=4)
+
+        result = float(evaluate_mathematical_expression("2**10 - 1000"))
+        self.assertAlmostEqual(result, 24, places=5)
+
+    def test_extreme_values(self):
+        result = float(evaluate_mathematical_expression("factorial(20)"))
+        self.assertEqual(result, 2432902008176640000)
+
+        result = float(evaluate_mathematical_expression("log(1e-10)"))
+        self.assertAlmostEqual(result, -23.0259, places=3)
+
+        result = float(evaluate_mathematical_expression("exp(20)"))
+        self.assertAlmostEqual(result, 485165195.4, places=1)
+
+    def test_degree_radian_conversions(self):
+        result = float(evaluate_mathematical_expression("degrees(pi)"))
+        self.assertEqual(result, 180)
+
+        result = float(evaluate_mathematical_expression("radians(180)"))
+        self.assertAlmostEqual(result, math.pi, places=10)
+
+        result = float(evaluate_mathematical_expression("degrees(2*pi)"))
+        self.assertEqual(result, 360)
+
+        result = float(evaluate_mathematical_expression("radians(90)"))
+        self.assertAlmostEqual(result, math.pi/2, places=10)
+
 
 if __name__ == "__main__":
     unittest.main()
