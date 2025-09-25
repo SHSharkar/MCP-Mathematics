@@ -479,6 +479,79 @@ UNIT_CONVERSIONS = {
     },
 }
 
+UNIT_ALIASES = {
+    "meters": "m", "meter": "m", "metres": "m", "metre": "m",
+    "kilometers": "km", "kilometer": "km", "kilometres": "km", "kilometre": "km",
+    "centimeters": "cm", "centimeter": "cm", "centimetres": "cm", "centimetre": "cm",
+    "millimeters": "mm", "millimeter": "mm", "millimetres": "mm", "millimetre": "mm",
+    "miles": "mi", "mile": "mi",
+    "yards": "yd", "yard": "yd",
+    "feet": "ft", "foot": "ft",
+    "inches": "in", "inch": "in",
+    "kilograms": "kg", "kilogram": "kg",
+    "grams": "g", "gram": "g",
+    "milligrams": "mg", "milligram": "mg",
+    "pounds": "lb", "pound": "lb", "lbs": "lb",
+    "ounces": "oz", "ounce": "oz",
+    "tons": "ton",
+    "seconds": "s", "second": "s", "sec": "s", "secs": "s",
+    "milliseconds": "ms", "millisecond": "ms", "millisec": "ms", "millisecs": "ms",
+    "microseconds": "us", "microsecond": "us", "microsec": "us", "microsecs": "us",
+    "nanoseconds": "ns", "nanosecond": "ns", "nanosec": "ns", "nanosecs": "ns",
+    "minutes": "min", "minute": "min", "mins": "min",
+    "hours": "h", "hour": "h", "hrs": "h", "hr": "h",
+    "days": "d", "day": "d",
+    "weeks": "wk", "week": "wk",
+    "months": "mo", "month": "mo",
+    "years": "yr", "year": "yr", "yrs": "yr",
+    "decades": "decade",
+    "centuries": "century",
+    "celsius": "C", "centigrade": "C",
+    "fahrenheit": "F", "fahr": "F",
+    "kelvin": "K",
+    "liters": "L", "liter": "L", "litres": "L", "litre": "L",
+    "milliliters": "mL", "milliliter": "mL", "millilitres": "mL", "millilitre": "mL",
+    "gallons": "gal", "gallon": "gal",
+    "quarts": "qt", "quart": "qt",
+    "pints": "pt", "pint": "pt",
+    "cups": "cup",
+    "tablespoons": "tbsp", "tablespoon": "tbsp",
+    "teaspoons": "tsp", "teaspoon": "tsp",
+    "bytes": "B", "byte": "B",
+    "kilobytes": "KB", "kilobyte": "KB",
+    "megabytes": "MB", "megabyte": "MB",
+    "gigabytes": "GB", "gigabyte": "GB",
+    "terabytes": "TB", "terabyte": "TB",
+    "petabytes": "PB", "petabyte": "PB",
+    "bits": "bit",
+    "kilobits": "Kbit", "kilobit": "Kbit",
+    "megabits": "Mbit", "megabit": "Mbit",
+    "gigabits": "Gbit", "gigabit": "Gbit",
+    "pascals": "Pa", "pascal": "Pa",
+    "kilopascals": "kPa", "kilopascal": "kPa",
+    "megapascals": "MPa", "megapascal": "MPa",
+    "atmospheres": "atm", "atmosphere": "atm",
+    "bars": "bar",
+    "millibars": "mbar", "millibar": "mbar",
+    "joules": "J", "joule": "J",
+    "kilojoules": "kJ", "kilojoule": "kJ",
+    "megajoules": "MJ", "megajoule": "MJ",
+    "calories": "cal", "calorie": "cal",
+    "kilocalories": "kcal", "kilocalorie": "kcal",
+    "watts": "W", "watt": "W",
+    "kilowatts": "kW", "kilowatt": "kW",
+    "megawatts": "MW", "megawatt": "MW",
+    "horsepower": "hp",
+    "newtons": "N", "newton": "N",
+    "kilonewtons": "kN", "kilonewton": "kN",
+    "degrees": "deg", "degree": "deg",
+    "radians": "rad", "radian": "rad",
+    "hertz": "Hz",
+    "kilohertz": "kHz",
+    "megahertz": "MHz",
+    "gigahertz": "GHz",
+}
+
 MATH_CONSTANTS = {
     "pi": math.pi,
     "e": math.e,
@@ -1058,6 +1131,250 @@ def convert_unit(value: float, from_unit: str, to_unit: str, unit_type: str) -> 
     else:
         base_value = value * conversions[from_unit]
         return base_value / conversions[to_unit]
+
+
+class ConversionHistory:
+    def __init__(self, max_size: int = 100):
+        self.history: list[dict[str, Any]] = []
+        self.max_size = max_size
+        self.lock = RLock()
+
+    def add(self, value: float, from_unit: str, to_unit: str, result: float) -> None:
+        with self.lock:
+            entry = {
+                "value": value,
+                "from_unit": from_unit,
+                "to_unit": to_unit,
+                "result": result,
+                "timestamp": datetime.datetime.now().isoformat()
+            }
+            self.history.append(entry)
+            if len(self.history) > self.max_size:
+                self.history.pop(0)
+
+    def get_recent(self, limit: int = 10) -> list[dict[str, Any]]:
+        with self.lock:
+            return self.history[-limit:]
+
+    def clear(self) -> None:
+        with self.lock:
+            self.history.clear()
+
+
+conversion_history = ConversionHistory()
+
+
+def resolve_unit_alias(unit: str) -> str:
+    unit_lower = unit.lower()
+    return UNIT_ALIASES.get(unit_lower, unit)
+
+
+def detect_unit_type(unit: str) -> str | None:
+    unit = resolve_unit_alias(unit)
+    for unit_type, units in UNIT_CONVERSIONS.items():
+        if unit in units:
+            return unit_type
+    return None
+
+
+def format_scientific_notation(value: float, precision: int = 4) -> str:
+    if abs(value) < 1e-10 or abs(value) > 1e10:
+        return f"{value:.{precision}e}"
+    return str(value)
+
+
+def convert_with_history(value: float, from_unit: str, to_unit: str, precision: int = 10) -> float:
+    from_unit = resolve_unit_alias(from_unit)
+    to_unit = resolve_unit_alias(to_unit)
+
+    unit_type = detect_unit_type(from_unit)
+    if not unit_type:
+        raise ValueError(f"Unknown unit: {from_unit}")
+
+    if to_unit not in UNIT_CONVERSIONS[unit_type]:
+        raise ValueError(f"Unknown unit: {to_unit}")
+
+    result = convert_unit(value, from_unit, to_unit, unit_type)
+    result = round(result, precision)
+
+    conversion_history.add(value, from_unit, to_unit, result)
+    return result
+
+
+def parse_compound_unit(unit_str: str) -> tuple[list[str], list[str]]:
+    unit_str = unit_str.replace("·", "*").replace("/", " / ").replace("*", " * ")
+
+    parts = unit_str.split()
+    numerator = []
+    denominator = []
+    current_list = numerator
+
+    for part in parts:
+        if part == "/":
+            current_list = denominator
+        elif part not in ["*", "·"]:
+            if "^" in part or part[-1].isdigit():
+                base_unit = "".join(c for c in part if not c.isdigit() and c != "^")
+                power = "".join(c for c in part if c.isdigit())
+                power = int(power) if power else 1
+                for _ in range(abs(power)):
+                    if power > 0:
+                        current_list.append(base_unit)
+                    else:
+                        (denominator if current_list == numerator else numerator).append(base_unit)
+            else:
+                current_list.append(part)
+
+    return numerator, denominator
+
+
+def calculate_percentage(value: float, percentage: float) -> float:
+    return value * (percentage / 100)
+
+
+def calculate_percentage_of(part: float, whole: float) -> float:
+    if whole == 0:
+        raise ValueError("Cannot calculate percentage of zero")
+    return (part / whole) * 100
+
+
+def calculate_percentage_change(old_value: float, new_value: float) -> float:
+    if old_value == 0:
+        raise ValueError("Cannot calculate percentage change from zero")
+    return ((new_value - old_value) / old_value) * 100
+
+
+def split_bill(total: float, people: int, tip_percent: float = 0) -> dict[str, float]:
+    if people <= 0:
+        raise ValueError("Number of people must be positive")
+
+    tip_amount = calculate_percentage(total, tip_percent)
+    total_with_tip = total + tip_amount
+    per_person = total_with_tip / people
+
+    return {
+        "total": total,
+        "tip_amount": tip_amount,
+        "total_with_tip": total_with_tip,
+        "per_person": per_person,
+        "people": people
+    }
+
+
+def calculate_tax(amount: float, tax_rate: float, is_inclusive: bool = False) -> dict[str, float]:
+    if is_inclusive:
+        base_amount = amount / (1 + tax_rate / 100)
+        tax_amount = amount - base_amount
+    else:
+        tax_amount = calculate_percentage(amount, tax_rate)
+        base_amount = amount
+
+    return {
+        "base_amount": base_amount,
+        "tax_rate": tax_rate,
+        "tax_amount": tax_amount,
+        "total_amount": base_amount + tax_amount
+    }
+
+
+def calculate_tip(amount: float, tip_percent: float) -> dict[str, float]:
+    tip_amount = calculate_percentage(amount, tip_percent)
+    return {
+        "base_amount": amount,
+        "tip_percent": tip_percent,
+        "tip_amount": tip_amount,
+        "total_amount": amount + tip_amount
+    }
+
+
+def calculate_compound_interest(
+    principal: float,
+    rate: float,
+    time: float,
+    compounds_per_year: int = 1
+) -> dict[str, float]:
+    rate_decimal = rate / 100
+    amount = principal * (1 + rate_decimal / compounds_per_year) ** (compounds_per_year * time)
+    interest = amount - principal
+
+    return {
+        "principal": principal,
+        "rate": rate,
+        "time": time,
+        "compounds_per_year": compounds_per_year,
+        "interest": interest,
+        "amount": amount
+    }
+
+
+def calculate_simple_interest(
+    principal: float,
+    rate: float,
+    time: float
+) -> dict[str, float]:
+    rate_decimal = rate / 100
+    interest = principal * rate_decimal * time
+    amount = principal + interest
+
+    return {
+        "principal": principal,
+        "rate": rate,
+        "time": time,
+        "interest": interest,
+        "amount": amount
+    }
+
+
+def calculate_loan_payment(
+    principal: float,
+    annual_rate: float,
+    years: float,
+    payments_per_year: int = 12
+) -> dict[str, float]:
+    if annual_rate == 0:
+        payment = principal / (years * payments_per_year)
+        total_paid = principal
+        interest_paid = 0
+    else:
+        rate = annual_rate / 100 / payments_per_year
+        n = years * payments_per_year
+        payment = principal * (rate * (1 + rate) ** n) / ((1 + rate) ** n - 1)
+        total_paid = payment * n
+        interest_paid = total_paid - principal
+
+    return {
+        "principal": principal,
+        "annual_rate": annual_rate,
+        "years": years,
+        "payments_per_year": payments_per_year,
+        "payment": payment,
+        "total_paid": total_paid,
+        "interest_paid": interest_paid
+    }
+
+
+def calculate_discount(original_price: float, discount_percent: float) -> dict[str, float]:
+    discount_amount = calculate_percentage(original_price, discount_percent)
+    final_price = original_price - discount_amount
+
+    return {
+        "original_price": original_price,
+        "discount_percent": discount_percent,
+        "discount_amount": discount_amount,
+        "final_price": final_price
+    }
+
+
+def calculate_markup(cost: float, markup_percent: float) -> dict[str, float]:
+    markup_amount = calculate_percentage(cost, markup_percent)
+    selling_price = cost + markup_amount
+
+    return {
+        "cost": cost,
+        "markup_percent": markup_percent,
+        "markup_amount": markup_amount,
+        "selling_price": selling_price
+    }
 
 
 _shutdown_requested = False
