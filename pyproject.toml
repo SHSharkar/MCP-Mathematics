@@ -1,6 +1,6 @@
 [project]
 name = "mcp-mathematics"
-version = "1.0.0"
+version = "2.0.0"
 description = "Production-ready Model Context Protocol server for mathematical operations"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -53,7 +53,7 @@ extend-exclude = '''
 
 [tool.ruff]
 line-length = 100
-target-version = "py310"
+target-version = "2.0.0"
 
 [tool.ruff.lint]
 select = [
