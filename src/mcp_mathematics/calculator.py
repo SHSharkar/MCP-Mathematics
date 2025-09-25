@@ -22,8 +22,8 @@ from mcp.server import FastMCP
 MAX_EXPRESSION_LENGTH = 1000
 MAX_EXPRESSION_DEPTH = 10
 MAX_HISTORY_SIZE = 100
-MAX_FACTORIAL_INPUT = 170
-MAX_POWER_EXPONENT = 1000
+MAX_FACTORIAL_INPUT = 300
+MAX_POWER_EXPONENT = 10000
 MAX_RESULT_LENGTH = 10000
 MAX_MEMORY_MB = 512
 MAX_LIST_SIZE = 10000
@@ -35,7 +35,7 @@ MAX_COMPUTATION_TIME = 20.0
 MAX_RECURSIVE_CALLS = 1000
 ENABLE_RATE_LIMITING = True
 RATE_LIMIT_WINDOW = 60
-MAX_REQUESTS_PER_WINDOW = 100000
+MAX_REQUESTS_PER_WINDOW = 1000000
 ENABLE_INPUT_HASHING = True
 
 FORBIDDEN_PATTERNS = [
@@ -226,6 +226,7 @@ MATH_FUNCTIONS = {
     "exp": math.exp,
     "sqrt": math.sqrt,
     "pow": math.pow,
+    "abs": lambda x: abs(x),
     "fabs": math.fabs,
     "factorial": math.factorial,
     "ceil": math.ceil,
@@ -667,8 +668,13 @@ def compute_expression(expression: str, session_id: str | None = None) -> Calcul
             except SyntaxError as e:
                 raise SyntaxError(f"Invalid mathematical expression: {str(e)}") from e
 
-        if not validate_ast_node(tree, session_vars=session_vars):
-            raise ValueError("Expression contains unsupported operations")
+        try:
+            if not validate_ast_node(tree, session_vars=session_vars):
+                raise ValueError("Expression contains unsupported operations")
+        except Exception as e:
+            if "unsupported operations" in str(e).lower():
+                raise ValueError(f"Unsupported mathematical operation detected: {str(e)}")
+            raise
 
         with (
             mathematical_computation_timeout(COMPUTATION_TIMEOUT),
@@ -676,8 +682,12 @@ def compute_expression(expression: str, session_id: str | None = None) -> Calcul
         ):
             result = evaluate_mathematical_node(tree, session_vars)
 
-        if isinstance(result, (int, float, complex)) and abs(result) > 10**100:
-            raise ValueError("Result too large to handle safely")
+        if isinstance(result, (int, float, complex)) and abs(result) > 10**200:
+            result_magnitude = abs(result)
+            if result_magnitude == float('inf'):
+                raise ValueError("Result is infinite - consider using smaller values")
+            else:
+                raise ValueError(f"Result magnitude ({result_magnitude:.2e}) exceeds safe computational limits")
 
         result_str = format_calculation_output(result, original_expression)
 
@@ -746,11 +756,20 @@ def format_calculation_output(result: Any, original_expression: str) -> str:
     if isinstance(result, (list, tuple)):
         return str(result)
 
-    if isinstance(result, float):
+    if isinstance(result, (float, int)):
         has_division = "/" in original_expression or "÷" in original_expression
         has_float_operand = "." in original_expression
+        has_statistics_func = any(func in original_expression for func in ["mean", "median", "stdev", "pstdev", "variance", "pvariance"])
 
-        if result.is_integer() and not has_division and not has_float_operand:
+        is_integer_result = isinstance(result, int) or (isinstance(result, float) and result.is_integer())
+
+        if "nextafter" in original_expression or "ulp" in original_expression:
+            return f"{result:.17g}"
+
+        if has_statistics_func and is_integer_result:
+            return f"{float(result):.1f}"
+
+        if is_integer_result and not has_division and not has_float_operand:
             return str(int(result))
 
         if abs(result) < 1e-10 and result != 0:
