@@ -46,12 +46,18 @@ class SemverPublisher:
         with open(self.pyproject_path, "r") as f:
             content = f.read()
 
-        pattern = r'version = "[^"]+"'
-        replacement = f'version = "{new_version}"'
-        new_content = re.sub(pattern, replacement, content)
+        pattern = r'(\[project\][\s\S]*?)version\s*=\s*"[^"]+"'
+        def replacement_func(match):
+            project_section = match.group(1)
+            return f'{project_section}version = "{new_version}"'
+
+        new_content = re.sub(pattern, replacement_func, content)
 
         if new_content == content:
             raise ValueError("Version pattern not found in pyproject.toml")
+
+        if 'target-version = "' + new_version + '"' in new_content:
+            raise ValueError(f"Version update would corrupt tool configuration. Ruff target-version should not be changed to package version {new_version}")
 
         with open(self.pyproject_path, "w") as f:
             f.write(new_content)
