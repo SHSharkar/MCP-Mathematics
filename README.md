@@ -1,36 +1,36 @@
 # MCP Mathematics
 
-A comprehensive Model Context Protocol (MCP) server that turns any AI assistant into a powerful mathematical computation engine. MCP Mathematics provides professional-level features including 52 advanced mathematical functions, 158 unit conversions across 15 categories, complete financial calculations, and secure AST-based evaluation—all delivered through a production-ready, secure environment.
+A comprehensive Model Context Protocol (MCP) server that turns any AI assistant into a powerful mathematical computation engine. MCP Mathematics gives you professional-grade features including 52 advanced mathematical functions, 158 unit conversions across 15 categories, complete financial calculations, and secure AST-based evaluation—all in a production-ready, secure environment.
 
 ## What Is MCP Mathematics?
 
-MCP Mathematics is the most comprehensive mathematical computation server for AI assistants, designed specifically for the Model Context Protocol. This production-ready solution turns any MCP-compatible AI into a powerful mathematical tool that can handle everything from simple arithmetic to complex financial calculations, unit conversions across many different fields, and advanced scientific computations.
+MCP Mathematics is the most complete mathematical computation server for AI assistants, built specifically for the Model Context Protocol. This production-ready solution turns any MCP-compatible AI into a powerful mathematical tool that handles everything from simple arithmetic to complex financial calculations, unit conversions across many different fields, and advanced scientific computations.
 
-**Key Innovation**: Through Python's Abstract Syntax Tree (AST) evaluation, MCP Mathematics offers exceptional mathematical capabilities while staying completely secure—preventing code injection vulnerabilities without losing any features.
+**Key Innovation**: Using Python's Abstract Syntax Tree (AST) evaluation, MCP Mathematics gives you exceptional mathematical capabilities while staying completely secure—stopping code injection vulnerabilities without losing any features.
 
 ## Why Choose MCP Mathematics?
 
 ### Uncompromising Security
 
-- **AST-Based Evaluation**: Every calculation is checked and verified through Python's AST, which prevents code injection attacks
+- **AST-Based Evaluation**: Every calculation is checked and verified through Python's AST, which stops code injection attacks
 - **Sandboxed Execution**: All calculations run in a secure, controlled environment that only allows safe operations
-- **Zero External Dependencies**: Low security risk since the core features don't need any external libraries
+- **Zero External Dependencies**: Lower security risk since the core features don't need any external libraries
 
-### Comprehensive Mathematical Power
+### Complete Mathematical Power
 
 - **52 Built-In Functions**: From simple math to complex scientific calculations
 - **158 Unit Conversions**: Wide-ranging unit conversion support covering 15 different categories
 - **Financial Calculations**: Full set of financial tools including interest, loan, and tax calculations
 - **Unicode Operator Support**: Easy mathematical symbols like ×, ÷, and ^ that feel natural to use
-- **Full Math Library Coverage**: Full access to all of Python's mathematical functions
+- **Full Math Library Coverage**: Complete access to all of Python's mathematical functions
 
 ### Production-Ready Architecture
 
-- **Type-Safe Design**: Complete type checking throughout the code ensures everything works reliably
+- **Type-Safe Design**: Complete type checking throughout the code makes sure everything works reliably
 - **Clean Production Code**: Professional code with no debugging leftovers or extra comments
-- **Comprehensive Testing**: 130 tests ensure all features work properly
-- **Thread-Safe Operations**: 100% concurrent execution reliability with Timer-based timeout system
-- **Advanced Memory Management**: Bounded LRU/TTL caches prevent memory leaks in production environments
+- **Complete Testing**: 130 tests make sure all features work properly
+- **Thread-Safe Operations**: 100% reliable concurrent execution with Timer-based timeout system
+- **Advanced Memory Management**: Bounded LRU/TTL caches stop memory leaks in production environments
 - **Enterprise Error Handling**: Proper exception chaining and graceful resource cleanup
 
 ## Getting Started
@@ -39,16 +39,16 @@ MCP Mathematics is the most comprehensive mathematical computation server for AI
 
 Before you install MCP Mathematics, make sure you have:
 
-- Python 3.10 or later installed on your system
+- Python 3.10 or later on your system
 - An MCP-compatible AI assistant (Claude Desktop, VS Code with Continue, or similar)
 
 ### Installation Options
 
-Pick the installation method that works best for you:
+Choose the installation method that works best for you:
 
 #### Option 1: Quick Install with uv (Recommended)
 
-This is the quickest way to get started:
+This is the fastest way to get started:
 
 ```bash
 # Install the uv package manager if you haven't already
@@ -70,7 +70,7 @@ pip install mcp-mathematics
 
 #### Option 3: Development Installation
 
-If you want to contribute or need the latest development version:
+If you want to help out or need the latest development version:
 
 ```bash
 git clone https://github.com/SHSharkar/MCP-Mathematics.git
@@ -141,13 +141,13 @@ If you're using VS Code with the Continue extension:
 
 ## Available MCP Tools
 
-MCP Mathematics gives you access to all its mathematical features through seven specialized tools, each one designed for specific tasks and built for great performance:
+MCP Mathematics gives you access to all its mathematical features through seven specialized tools, each designed for specific tasks and built for excellent performance:
 
 ### Core Calculation Tools
 
 #### 1. `calculate` - Single Expression Evaluation
 
-The main tool for working with mathematical expressions. It supports all 52 built-in functions, unit conversions, and financial calculations. It can handle everything from simple arithmetic to complex scientific computations.
+The main tool for working with mathematical expressions. It supports all 52 built-in functions, unit conversions, and financial calculations. It handles everything from simple arithmetic to complex scientific computations.
 
 **Use Cases:**
 
@@ -158,7 +158,7 @@ The main tool for working with mathematical expressions. It supports all 52 buil
 
 #### 2. `batch_calculate` - Parallel Processing Engine
 
-Built to process many expressions at the same time, which gives you much better performance when doing lots of calculations or data analysis work.
+Built to handle many expressions at the same time, giving you much better performance when doing lots of calculations or data analysis work.
 
 **Use Cases:**
 
@@ -175,21 +175,21 @@ Output: ["1.0", "1.0", "4.0", "120"]
 
 #### 3. `convert_unit` - Advanced Unit Conversion System
 
-Smart unit conversion system that works with 158 units across 15 categories. It automatically detects unit types, supports different spellings, and handles complex compound units.
+Smart unit conversion system that works with 158 units across 15 categories. It automatically figures out unit types, supports different spellings, and handles complex compound units.
 
 **Advanced Features:**
 
-- Smart detection: Automatically identifies unit categories
+- Smart detection: Automatically figures out unit categories
 - Alias support: Accepts multiple spellings and abbreviations
 - Compound units: Handles complex units like m/s², kg·m/s²
-- History tracking: Maintains conversion audit trail
+- History tracking: Keeps a conversion audit trail
 
 ```
 Input: value=100, from_unit="meters", to_unit="feet"
 Output: "328.084" (with automatic precision handling)
 ```
 
-#### 4. `financial_calculate` - Comprehensive Financial Engine
+#### 4. `financial_calculate` - Complete Financial Engine
 
 Complete set of financial tools for professional use. It supports interest calculations, loan analysis, tax computations, and business calculations.
 
@@ -209,18 +209,18 @@ Output: {"amount": 1647.01, "interest": 647.01, "effective_rate": 5.12}
 
 #### 5. `get_calculation_history` - Calculation Audit Trail
 
-Keeps a complete record of all calculations with timestamps, so you can track, verify, and repeat any mathematical work.
+Keeps a complete record of all calculations with timestamps, so you can track, check, and repeat any mathematical work.
 
 **Features:**
 
-- Timestamped records: Every calculation includes execution time
-- Configurable limits: Retrieve 1-100 recent calculations
+- Timestamped records: Every calculation includes when it was run
+- Configurable limits: Get 1-100 recent calculations
 - Expression tracking: Full input and output logging
 - Error logging: Failed calculations with error details
 
 #### 6. `clear_history` - History Management
 
-Lets you safely clear your calculation history when needed for privacy, performance, or storage reasons.
+Lets you safely clear your calculation history when you need to for privacy, performance, or storage reasons.
 
 #### 7. `list_functions` - Function and Capability Discovery
 
@@ -250,11 +250,11 @@ Pre-configured prompts for common calculation patterns:
 
 ## Mathematical Capabilities
 
-MCP Mathematics provides a comprehensive mathematical computation environment with support for over 52 functions spanning basic arithmetic, advanced scientific computing, and specialized mathematical operations. The system is designed to handle everything from simple calculations to complex scientific and financial computations with precision and reliability.
+MCP Mathematics gives you a complete mathematical computation environment with support for over 52 functions spanning basic arithmetic, advanced scientific computing, and specialized mathematical operations. The system handles everything from simple calculations to complex scientific and financial computations with precision and reliability.
 
 ### Basic Operations
 
-Beyond standard arithmetic, MCP Mathematics supports intuitive mathematical operators including Unicode symbols for natural mathematical expression:
+Beyond standard arithmetic, MCP Mathematics supports easy-to-use mathematical operators including Unicode symbols for natural mathematical expression:
 
 - Addition: `+`
 - Subtraction: `-`
@@ -403,11 +403,11 @@ calculate("20 ÷ 4")  # Result: 5.0
 calculate("2 ^ 10")  # Result: 1024
 ```
 
-## Comprehensive Unit Conversion System
+## Complete Unit Conversion System
 
 MCP Mathematics includes a smart unit conversion system that works with 158 carefully calibrated units across 15 essential categories. This system does more than simple conversions—it provides smart unit detection, supports different spellings, handles complex compound units, and tracks your conversion history. This makes it perfect for scientific work, engineering calculations, and everyday conversions.
 
-The conversion system automatically manages precision, accepts many different input formats, and works perfectly with the mathematical expression engine for smooth integration in complex calculations.
+The conversion system automatically manages precision, accepts many different input formats, and works seamlessly with the mathematical expression engine for smooth integration in complex calculations.
 
 ### Supported Unit Categories
 
@@ -498,7 +498,7 @@ convert_unit(100, "metre", "yard")  # Supports alternate spellings
 
 #### Auto-Detection
 
-The system automatically detects unit types from context:
+The system automatically figures out unit types from context:
 
 ```python
 convert_unit(100, "kg", "lb")  # Automatically knows it's mass conversion
@@ -555,7 +555,7 @@ convert_unit(1, "TB", "bytes")  # 1099511627776
 
 MCP Mathematics includes a complete set of financial tools designed for professional use, education, and personal money management. The financial system supports advanced calculations including compound interest modeling, loan analysis, tax calculations, and business financial work.
 
-All financial functions use high precision to ensure accurate money calculations and support different compounding frequencies, payment schedules, and tax situations you'll find in real-world financial work.
+All financial functions use high precision to make sure you get accurate money calculations and support different compounding frequencies, payment schedules, and tax situations you'll find in real-world financial work.
 
 ### Core Financial Functions
 
@@ -624,47 +624,47 @@ calculate_markup(100, 25)  # 25% markup on $100 cost
 
 ## Enterprise Architecture & Security
 
-MCP Mathematics is built as an enterprise-grade mathematical computation platform that combines strong security measures with production-ready architecture. The system is designed to handle mission-critical calculations while keeping the highest standards of code quality and security.
+MCP Mathematics is built as an enterprise-grade mathematical computation platform that combines strong security measures with production-ready architecture. The system is designed to handle mission-critical calculations while maintaining the highest standards of code quality and security.
 
 ### Multi-Layered Security Framework
 
 #### Core Security Principles
 
 - **Zero-Trust Architecture**: Every input is checked and every operation is verified
-- **Defense in Depth**: Multiple security layers provide complete protection
+- **Defense in Depth**: Multiple security layers give you complete protection
 - **Principle of Least Privilege**: Only essential operations are allowed
-- **Fail-Safe Defaults**: Safe defaults prevent accidental security issues
+- **Fail-Safe Defaults**: Safe defaults stop accidental security issues
 
 #### Security Implementation
 
-- **AST Evaluation Engine**: Every mathematical expression is processed through an Abstract Syntax Tree before evaluation, which prevents code injection attacks while keeping full mathematical capability
-- **Operation Whitelisting**: Only specifically approved mathematical operations and functions can run, which prevents unauthorized code execution
+- **AST Evaluation Engine**: Every mathematical expression is processed through an Abstract Syntax Tree before evaluation, which stops code injection attacks while keeping full mathematical capability
+- **Operation Whitelisting**: Only specifically approved mathematical operations and functions can run, which stops unauthorized code execution
 - **Input Sanitization**: Thorough checking of all expressions and parameters before processing
-- **Error Containment**: Complete error handling ensures calculation failures don't affect system security
+- **Error Containment**: Complete error handling makes sure calculation failures don't affect system security
 - **Dependency Minimization**: Core features need no external libraries, which greatly reduces security risks
 
 ### Production-Grade Architecture
 
 #### Code Quality Standards
 
-- **Type Safety**: Complete type annotations using Python 3.10+ features ensure compile-time error detection
-- **Clean Architecture**: Modular design with clear separation of concerns enables maintainability and scalability
+- **Type Safety**: Complete type annotations using Python 3.10+ features make sure you catch errors at compile-time
+- **Clean Architecture**: Modular design with clear separation of concerns makes maintenance and scaling easier
 - **Professional Codebase**: Production-ready code with no debug statements, console logs, or unnecessary comments
-- **Comprehensive Testing**: 130 unit tests provide thorough coverage across all mathematical functions and edge cases
+- **Complete Testing**: 130 unit tests give you thorough coverage across all mathematical functions and edge cases
 - **Automated Quality**: Code standards enforced through Black formatting and Ruff linting
 
 #### Performance & Reliability
 
 - **Optimized Computation**: Efficient algorithms and data structures for high-performance calculations
-- **Advanced Memory Management**: Bounded LRU and TTL cache systems with automatic cleanup prevent memory leaks in long-running processes
+- **Advanced Memory Management**: Bounded LRU and TTL cache systems with automatic cleanup stop memory leaks in long-running processes
 - **Thread-Safe Concurrency**: 100% reliable concurrent execution using Timer-based timeouts instead of signal-based approaches
 - **Session Management**: Graceful resource cleanup and session handling for enterprise environments
-- **Error Recovery**: Proper exception chaining with enhanced traceability for debugging and monitoring
+- **Error Recovery**: Proper exception chaining with better traceability for debugging and monitoring
 - **Scalability**: Architecture designed to handle high-volume calculation workloads with concurrent processing
 
 ## Development Guide
 
-This complete guide gives you everything you need to contribute to MCP Mathematics, from setting up your development environment to building production-ready distributions. The project follows strict quality standards and automated workflows to ensure everything works reliably and stays maintainable.
+This complete guide gives you everything you need to contribute to MCP Mathematics, from setting up your development environment to building production-ready distributions. The project follows strict quality standards and automated workflows to make sure everything works reliably and stays maintainable.
 
 ### Development Environment Setup
 
@@ -690,7 +690,7 @@ pip install -e ".[dev]"
 
 #### Running the Complete Test Suite
 
-Execute the comprehensive test suite covering all 130 test cases:
+Run the comprehensive test suite covering all 130 test cases:
 
 ```bash
 # Run all tests with detailed output
@@ -707,7 +707,7 @@ python -m pytest tests/test_financial.py -v       # Financial calculations
 
 #### Code Quality and Standards
 
-Maintain professional code standards with automated quality tools:
+Keep professional code standards with automated quality tools:
 
 ```bash
 # Auto-format code with Black (100-character line limit)
@@ -774,7 +774,7 @@ twine upload dist/*
 
 ## Error Handling
 
-MCP Mathematics gives you clear, helpful error messages to help you figure out what's wrong:
+MCP Mathematics gives you clear, helpful error messages to help you figure out what went wrong:
 
 - **Syntax Errors**: Clear identification of malformed expressions
 - **Division by Zero**: Smooth handling of mathematical impossibilities
@@ -799,12 +799,12 @@ Email: md@szd.sh
 
 ## Contributing
 
-We welcome contributions that keep our high standards for code quality. When you contribute:
+We welcome contributions that maintain our high standards for code quality. When you contribute:
 
 - Write clean, comment-free production code
 - Include complete type annotations
 - Add complete test coverage for new features
-- Maintain a clean, logical git history
+- Keep a clean, logical git history
 
 ## Acknowledgments
 
