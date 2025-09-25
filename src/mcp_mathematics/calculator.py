@@ -298,6 +298,13 @@ UNIT_CONVERSIONS = {
         "yd": 0.9144,
         "ft": 0.3048,
         "in": 0.0254,
+        "nmi": 1852.0,
+        "ly": 9.4607e15,
+        "AU": 1.496e11,
+        "pc": 3.0857e16,
+        "angstrom": 1e-10,
+        "micron": 1e-6,
+        "nm": 1e-9,
     },
     "mass": {
         "kg": 1.0,
@@ -306,6 +313,13 @@ UNIT_CONVERSIONS = {
         "lb": 0.453592,
         "oz": 0.0283495,
         "ton": 1000.0,
+        "t": 1000.0,
+        "ton_us": 907.185,
+        "ton_uk": 1016.05,
+        "st": 6.35029,
+        "ct": 0.0002,
+        "gr": 6.47989e-5,
+        "amu": 1.66054e-27,
     },
     "time": {
         "s": 1.0,
@@ -315,11 +329,153 @@ UNIT_CONVERSIONS = {
         "min": 60.0,
         "h": 3600.0,
         "d": 86400.0,
+        "wk": 604800.0,
+        "mo": 2592000.0,
+        "yr": 31536000.0,
+        "decade": 315360000.0,
+        "century": 3153600000.0,
+        "ps": 1e-12,
+        "fortnight": 1209600.0,
+        "millennium": 31536000000.0,
     },
     "temperature": {
         "K": lambda x: x,
         "C": lambda x: x + 273.15,
         "F": lambda x: (x - 32) * 5 / 9 + 273.15,
+    },
+    "area": {
+        "m2": 1.0,
+        "km2": 1e6,
+        "cm2": 1e-4,
+        "mm2": 1e-6,
+        "ft2": 0.092903,
+        "yd2": 0.836127,
+        "in2": 0.00064516,
+        "mi2": 2.59e6,
+        "acre": 4046.86,
+        "hectare": 10000.0,
+        "are": 100.0,
+        "sqch": 404.686,
+    },
+    "volume": {
+        "L": 0.001,
+        "mL": 1e-6,
+        "m3": 1.0,
+        "cm3": 1e-6,
+        "gal": 0.00378541,
+        "qt": 0.000946353,
+        "pt": 0.000473176,
+        "fl_oz": 2.95735e-5,
+        "gal_uk": 0.00454609,
+        "qt_uk": 0.00113652,
+        "pt_uk": 0.000568261,
+        "cup": 0.000236588,
+        "tbsp": 1.47868e-5,
+        "tsp": 4.92892e-6,
+        "ft3": 0.0283168,
+        "in3": 1.63871e-5,
+    },
+    "speed": {
+        "m/s": 1.0,
+        "km/h": 0.277778,
+        "mph": 0.44704,
+        "ft/s": 0.3048,
+        "knot": 0.514444,
+        "mach": 340.29,
+        "cm/s": 0.01,
+        "mi/min": 26.8224,
+        "in/s": 0.0254,
+        "c": 299792458.0,
+    },
+    "data": {
+        "B": 1.0,
+        "KB": 1000.0,
+        "MB": 1e6,
+        "GB": 1e9,
+        "TB": 1e12,
+        "PB": 1e15,
+        "EB": 1e18,
+        "ZB": 1e21,
+        "bit": 0.125,
+        "Kbit": 125.0,
+        "Mbit": 125000.0,
+        "Gbit": 1.25e8,
+        "Tbit": 1.25e11,
+        "KiB": 1024.0,
+        "MiB": 1048576.0,
+        "GiB": 1073741824.0,
+    },
+    "pressure": {
+        "Pa": 1.0,
+        "kPa": 1000.0,
+        "MPa": 1e6,
+        "atm": 101325.0,
+        "bar": 100000.0,
+        "mbar": 100.0,
+        "psi": 6894.76,
+        "torr": 133.322,
+        "mmHg": 133.322,
+        "inHg": 3386.39,
+    },
+    "energy": {
+        "J": 1.0,
+        "kJ": 1000.0,
+        "MJ": 1e6,
+        "cal": 4.184,
+        "kcal": 4184.0,
+        "Wh": 3600.0,
+        "kWh": 3.6e6,
+        "BTU": 1055.06,
+        "eV": 1.60218e-19,
+        "ft_lb": 1.35582,
+        "erg": 1e-7,
+        "therm": 1.055e8,
+    },
+    "power": {
+        "W": 1.0,
+        "kW": 1000.0,
+        "MW": 1e6,
+        "hp": 745.7,
+        "PS": 735.499,
+        "BTU/h": 0.293071,
+        "ft_lb/s": 1.35582,
+        "cal/s": 4.184,
+        "erg/s": 1e-7,
+        "ton_refrigeration": 3516.85,
+    },
+    "force": {
+        "N": 1.0,
+        "kN": 1000.0,
+        "lbf": 4.44822,
+        "kgf": 9.80665,
+        "dyne": 1e-5,
+        "pdl": 0.138255,
+        "ozf": 0.278014,
+        "tonf": 9806.65,
+    },
+    "angle": {
+        "deg": 1.0,
+        "rad": 57.2958,
+        "grad": 0.9,
+        "arcmin": 0.0166667,
+        "arcsec": 0.000277778,
+        "turn": 360.0,
+    },
+    "frequency": {
+        "Hz": 1.0,
+        "kHz": 1000.0,
+        "MHz": 1e6,
+        "GHz": 1e9,
+        "rpm": 0.0166667,
+        "rad/s": 0.159155,
+    },
+    "fuel_economy": {
+        "mpg": 1.0,
+        "mpg_uk": 1.20095,
+        "L/100km": 235.215,
+        "km/L": 2.35215,
+        "mi/L": 3.78541,
+        "gal/100mi": 100.0,
     },
 }
 
@@ -875,6 +1031,30 @@ def convert_unit(value: float, from_unit: str, to_unit: str, unit_type: str) -> 
             return kelvin - 273.15
         elif to_unit == "F":
             return (kelvin - 273.15) * 9 / 5 + 32
+    elif unit_type == "fuel_economy":
+        if from_unit == "mpg" and to_unit == "L/100km":
+            return 235.215 / value
+        elif from_unit == "L/100km" and to_unit == "mpg":
+            return 235.215 / value
+        elif from_unit == "mpg_uk" and to_unit == "L/100km":
+            return 282.481 / value
+        elif from_unit == "L/100km" and to_unit == "mpg_uk":
+            return 282.481 / value
+        elif from_unit == "km/L" and to_unit == "L/100km":
+            return 100.0 / value
+        elif from_unit == "L/100km" and to_unit == "km/L":
+            return 100.0 / value
+        elif from_unit == "mpg" and to_unit == "mpg_uk":
+            return value / 1.20095
+        elif from_unit == "mpg_uk" and to_unit == "mpg":
+            return value * 1.20095
+        elif from_unit == "mpg" and to_unit == "km/L":
+            return value * 0.425144
+        elif from_unit == "km/L" and to_unit == "mpg":
+            return value * 2.35215
+        else:
+            base_value = value * conversions[from_unit]
+            return base_value / conversions[to_unit]
     else:
         base_value = value * conversions[from_unit]
         return base_value / conversions[to_unit]
