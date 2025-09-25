@@ -1,14 +1,25 @@
 import ast
+import asyncio
+import cmath
 import datetime
 import hashlib
+import json
 import logging
 import math
 import operator
+import queue
 import re
+import resource
 import signal
+import statistics
 import sys
+import threading
 import time
-from typing import Any, Union
+from collections import deque
+from contextlib import contextmanager
+from dataclasses import dataclass, field
+from threading import RLock
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from mcp.server import FastMCP
 
@@ -17,8 +28,11 @@ MAX_EXPRESSION_DEPTH = 10
 MAX_HISTORY_SIZE = 100
 MAX_FACTORIAL_INPUT = 170
 MAX_POWER_EXPONENT = 1000
+MAX_RESULT_LENGTH = 10000
+MAX_MEMORY_MB = 512
+MAX_LIST_SIZE = 10000
 
-COMPUTATION_TIMEOUT = 50.0
+COMPUTATION_TIMEOUT = 15.0
 ENABLE_AUDIT_LOGGING = True
 
 MAX_COMPUTATION_TIME = 20.0
@@ -41,18 +55,123 @@ FORBIDDEN_PATTERNS = [
     r'hasattr\s*\(',
 ]
 
-_request_history: dict[str, list[float]] = {}
-_computation_stats: dict[str, dict[str, Any]] = {}
+_cache_lock = RLock()
+_metrics_lock = RLock()
+_history_lock = RLock()
+_session_lock = RLock()
+_rate_limit_lock = RLock()
 
-_expression_cache: dict[str, tuple[str, float]] = {}
-_ast_cache: dict[str, ast.AST] = {}
+_request_history: Dict[str, deque] = {}
+_computation_stats: Dict[str, Dict[str, Any]] = {}
+_expression_cache: Dict[str, Tuple[str, float]] = {}
+_ast_cache: Dict[str, ast.AST] = {}
+_sessions: Dict[str, Dict[str, Union[float, complex]]] = {}
+
 CACHE_TTL = 300
 MAX_CACHE_SIZE = 1000
 
 logger = logging.getLogger(__name__)
-
 security_logger = logging.getLogger(f"{__name__}.security")
 security_logger.setLevel(logging.INFO)
+
+class AsyncLogger:
+    def __init__(self, base_logger):
+        self.queue = queue.Queue()
+        self.logger = base_logger
+        self.worker = threading.Thread(target=self._process_logs, daemon=True)
+        self.worker.start()
+
+    def log(self, level, message):
+        self.queue.put((level, message, time.time()))
+
+    def _process_logs(self):
+        while True:
+            try:
+                level, message, timestamp = self.queue.get(timeout=0.1)
+                self.logger.log(level, f"[{timestamp:.3f}] {message}")
+            except queue.Empty:
+                continue
+
+async_logger = AsyncLogger(logger)
+async_security_logger = AsyncLogger(security_logger)
+
+@dataclass
+class CalculationResult:
+    success: bool
+    expression: str
+    result: Optional[Union[float, complex, bool, tuple, list]] = None
+    error: Optional[Dict[str, Any]] = None
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self):
+        return {
+            "success": self.success,
+            "expression": self.expression,
+            "result": str(self.result) if self.result is not None else None,
+            "error": self.error,
+            "metadata": self.metadata
+        }
+
+    def to_string(self):
+        if self.success:
+            return f"Result: {self.result}"
+        else:
+            return f"Error: {self.error.get('message', 'Unknown error')}"
+
+class RateLimiter:
+    def __init__(self, max_requests: int, window: int):
+        self.max_requests = max_requests
+        self.window = window
+        self.requests = {}
+        self.lock = RLock()
+
+    def check_rate_limit(self, client_id: str) -> bool:
+        with self.lock:
+            current_time = time.time()
+
+            if client_id not in self.requests:
+                self.requests[client_id] = deque()
+
+            while self.requests[client_id] and self.requests[client_id][0] < current_time - self.window:
+                self.requests[client_id].popleft()
+
+            if len(self.requests[client_id]) >= self.max_requests:
+                return False
+
+            self.requests[client_id].append(current_time)
+            return True
+
+rate_limiter = RateLimiter(MAX_REQUESTS_PER_WINDOW, RATE_LIMIT_WINDOW)
+
+@contextmanager
+def computation_timeout(seconds: float):
+    def timeout_handler(signum, frame):
+        raise TimeoutError(f"Computation exceeded {seconds}s limit")
+
+    old_handler = signal.signal(signal.SIGALRM, timeout_handler)
+    signal.alarm(int(seconds))
+    try:
+        yield
+    finally:
+        signal.alarm(0)
+        signal.signal(signal.SIGALRM, old_handler)
+
+@contextmanager
+def memory_limit(mb: int):
+    try:
+        soft, hard = resource.getrlimit(resource.RLIMIT_AS)
+        new_limit = mb * 1024 * 1024
+
+        if new_limit < soft and new_limit < hard:
+            resource.setrlimit(resource.RLIMIT_AS, (new_limit, hard))
+            try:
+                yield
+            finally:
+                resource.setrlimit(resource.RLIMIT_AS, (soft, hard))
+        else:
+            yield
+    except (ValueError, OSError):
+        yield
 
 OPERATORS = {
     ast.Add: operator.add,
@@ -64,6 +183,20 @@ OPERATORS = {
     ast.Pow: operator.pow,
     ast.USub: operator.neg,
     ast.UAdd: operator.pos,
+    ast.BitXor: operator.xor,
+    ast.BitOr: operator.or_,
+    ast.BitAnd: operator.and_,
+    ast.LShift: operator.lshift,
+    ast.RShift: operator.rshift,
+}
+
+COMPARISON_OPS = {
+    ast.Eq: operator.eq,
+    ast.NotEq: operator.ne,
+    ast.Lt: operator.lt,
+    ast.LtE: operator.le,
+    ast.Gt: operator.gt,
+    ast.GtE: operator.ge,
 }
 
 MATH_FUNCTIONS = {
@@ -121,182 +254,219 @@ MATH_FUNCTIONS = {
     "ulp": getattr(math, "ulp", None),
 }
 
+STATISTICS_FUNCTIONS = {
+    "mean": statistics.mean,
+    "median": statistics.median,
+    "mode": statistics.mode,
+    "stdev": statistics.stdev,
+    "pstdev": statistics.pstdev,
+    "variance": statistics.variance,
+    "pvariance": statistics.pvariance,
+    "harmonic_mean": statistics.harmonic_mean,
+    "geometric_mean": getattr(statistics, "geometric_mean", None),
+    "quantiles": getattr(statistics, "quantiles", None),
+}
+
+COMPLEX_FUNCTIONS = {
+    "phase": cmath.phase,
+    "polar": cmath.polar,
+    "rect": cmath.rect,
+    "csin": cmath.sin,
+    "ccos": cmath.cos,
+    "ctan": cmath.tan,
+    "cexp": cmath.exp,
+    "clog": cmath.log,
+    "clog10": cmath.log10,
+    "csqrt": cmath.sqrt,
+}
+
+UNIT_CONVERSIONS = {
+    "length": {
+        "m": 1.0,
+        "km": 1000.0,
+        "cm": 0.01,
+        "mm": 0.001,
+        "mi": 1609.344,
+        "yd": 0.9144,
+        "ft": 0.3048,
+        "in": 0.0254,
+    },
+    "mass": {
+        "kg": 1.0,
+        "g": 0.001,
+        "mg": 1e-6,
+        "lb": 0.453592,
+        "oz": 0.0283495,
+        "ton": 1000.0,
+    },
+    "time": {
+        "s": 1.0,
+        "ms": 0.001,
+        "us": 1e-6,
+        "ns": 1e-9,
+        "min": 60.0,
+        "h": 3600.0,
+        "d": 86400.0,
+    },
+    "temperature": {
+        "K": lambda x: x,
+        "C": lambda x: x + 273.15,
+        "F": lambda x: (x - 32) * 5/9 + 273.15,
+    },
+}
+
 MATH_CONSTANTS = {
     "pi": math.pi,
     "e": math.e,
     "tau": math.tau,
     "inf": math.inf,
     "nan": math.nan,
+    "phi": (1 + math.sqrt(5)) / 2,
+    "euler": 0.5772156649,
 }
 
 MATH_FUNCTIONS = {k: v for k, v in MATH_FUNCTIONS.items() if v is not None}
+STATISTICS_FUNCTIONS = {k: v for k, v in STATISTICS_FUNCTIONS.items() if v is not None}
 
+ALL_FUNCTIONS = {**MATH_FUNCTIONS, **STATISTICS_FUNCTIONS, **COMPLEX_FUNCTIONS}
 
 class CalculationHistory:
     def __init__(self, max_size: int = MAX_HISTORY_SIZE):
-        self.history: list[dict[str, Any]] = []
+        self.history: List[Dict[str, Any]] = []
         self.max_size = max_size
+        self.lock = RLock()
 
     def add(self, expression: str, result: str) -> None:
-        entry = {
-            "expression": expression,
-            "result": result,
-            "timestamp": datetime.datetime.now().isoformat(),
-        }
-        self.history.append(entry)
-        if len(self.history) > self.max_size:
-            self.history.pop(0)
+        with self.lock:
+            entry = {
+                "expression": expression,
+                "result": result,
+                "timestamp": datetime.datetime.now().isoformat(),
+            }
+            self.history.append(entry)
+            if len(self.history) > self.max_size:
+                self.history.pop(0)
 
-        if ENABLE_AUDIT_LOGGING:
-            logger.info(f"Added calculation: {expression} = {result}")
+            if ENABLE_AUDIT_LOGGING:
+                async_logger.log(logging.INFO, f"Added calculation: {expression} = {result}")
 
-    def get_recent(self, limit: int = 10) -> list[dict[str, Any]]:
-        return self.history[-limit:]
+    def get_recent(self, limit: int = 10) -> List[Dict[str, Any]]:
+        with self.lock:
+            return self.history[-limit:]
 
     def clear(self) -> None:
-        if ENABLE_AUDIT_LOGGING:
-            logger.info("Calculation history cleared")
-        self.history.clear()
-
+        with self.lock:
+            if ENABLE_AUDIT_LOGGING:
+                async_logger.log(logging.INFO, "Calculation history cleared")
+            self.history.clear()
 
 calculation_history = CalculationHistory()
 
+def fast_hash(expression: str) -> str:
+    return str(hash(expression))
 
 def validate_input_security(expression: str, client_id: str = "default") -> bool:
-    current_time = time.time()
-
     if ENABLE_RATE_LIMITING:
-        if client_id not in _request_history:
-            _request_history[client_id] = []
-
-        _request_history[client_id] = [
-            req_time for req_time in _request_history[client_id]
-            if current_time - req_time < RATE_LIMIT_WINDOW
-        ]
-
-        if len(_request_history[client_id]) >= MAX_REQUESTS_PER_WINDOW:
-            security_logger.warning(f"Rate limit exceeded for client: {client_id}")
+        if not rate_limiter.check_rate_limit(client_id):
+            async_security_logger.log(logging.WARNING, f"Rate limit exceeded for client: {client_id}")
             raise PermissionError(
                 f"Rate limit exceeded: {MAX_REQUESTS_PER_WINDOW} requests per {RATE_LIMIT_WINDOW} seconds"
             )
 
-        _request_history[client_id].append(current_time)
-
     for pattern in FORBIDDEN_PATTERNS:
         if re.search(pattern, expression, re.IGNORECASE):
-            security_logger.error(f"Forbidden pattern detected in expression: {pattern}")
-            raise ValueError(f"Expression contains forbidden pattern: {pattern}")
+            async_security_logger.log(logging.ERROR, f"Forbidden pattern detected: {pattern}")
+            raise ValueError(f"Expression contains forbidden pattern")
 
-    suspicious_chars = ['\\x00', '\\n', '\\r', '\\t', '\\b', '\\f', '\\v']
-    if any(char in expression for char in suspicious_chars):
-        security_logger.error(f"Control characters detected in expression")
+    suspicious_chars = ['\\x00', '\\n', '\\r', '\\b', '\\f', '\\v']
+    filtered_expr = ''.join(ch for ch in expression if ch not in suspicious_chars)
+
+    if len(filtered_expr) != len(expression):
+        async_security_logger.log(logging.ERROR, "Control characters detected")
         raise ValueError("Expression contains invalid control characters")
-
-    normalized = expression.encode('ascii', 'ignore').decode('ascii')
-    if len(normalized) != len(expression):
-        security_logger.warning(f"Non-ASCII characters detected in expression")
-
-    if ENABLE_INPUT_HASHING:
-        input_hash = hashlib.sha256(expression.encode()).hexdigest()[:16]
-        security_logger.info(f"Processing expression hash: {input_hash}")
 
     return True
 
-
 def monitor_computation_performance(expression: str, start_time: float, end_time: float) -> None:
-    computation_time = end_time - start_time
-    expression_hash = hashlib.sha256(expression.encode()).hexdigest()[:16]
+    with _metrics_lock:
+        computation_time = end_time - start_time
+        expression_hash = fast_hash(expression)
 
-    if expression_hash not in _computation_stats:
-        _computation_stats[expression_hash] = {
-            "count": 0,
-            "total_time": 0.0,
-            "max_time": 0.0,
-            "first_seen": start_time,
-            "last_seen": end_time
-        }
+        if expression_hash not in _computation_stats:
+            _computation_stats[expression_hash] = {
+                "count": 0,
+                "total_time": 0.0,
+                "max_time": 0.0,
+                "first_seen": start_time,
+                "last_seen": end_time
+            }
 
-    stats = _computation_stats[expression_hash]
-    stats["count"] += 1
-    stats["total_time"] += computation_time
-    stats["max_time"] = max(stats["max_time"], computation_time)
-    stats["last_seen"] = end_time
+        stats = _computation_stats[expression_hash]
+        stats["count"] += 1
+        stats["total_time"] += computation_time
+        stats["max_time"] = max(stats["max_time"], computation_time)
+        stats["last_seen"] = end_time
 
-    if computation_time > MAX_COMPUTATION_TIME:
-        security_logger.warning(
-            f"Slow computation detected: {computation_time:.3f}s for expression hash {expression_hash}"
-        )
-
-    if ENABLE_AUDIT_LOGGING and computation_time > 0.1:
-        logger.info(
-            f"Performance: {computation_time:.3f}s for expression hash {expression_hash} "
-            f"(count: {stats['count']}, avg: {stats['total_time']/stats['count']:.3f}s)"
-        )
-
+        if computation_time > MAX_COMPUTATION_TIME:
+            async_security_logger.log(
+                logging.WARNING,
+                f"Slow computation: {computation_time:.3f}s for {expression_hash}"
+            )
 
 def cleanup_caches() -> None:
-    current_time = time.time()
+    with _cache_lock:
+        current_time = time.time()
 
-    expired_keys = [
-        key for key, (_, timestamp) in _expression_cache.items()
-        if current_time - timestamp > CACHE_TTL
-    ]
-    for key in expired_keys:
-        del _expression_cache[key]
-
-    if len(_expression_cache) > MAX_CACHE_SIZE:
-        sorted_items = sorted(
-            _expression_cache.items(),
-            key=lambda x: x[1][1]
-        )
-        items_to_remove = len(_expression_cache) - MAX_CACHE_SIZE
-        for key, _ in sorted_items[:items_to_remove]:
+        expired_keys = [
+            key for key, (_, timestamp) in _expression_cache.items()
+            if current_time - timestamp > CACHE_TTL
+        ]
+        for key in expired_keys:
             del _expression_cache[key]
 
-    if len(_ast_cache) > MAX_CACHE_SIZE:
-        keys_to_remove = list(_ast_cache.keys())[: len(_ast_cache) // 2]
-        for key in keys_to_remove:
-            del _ast_cache[key]
+        if len(_expression_cache) > MAX_CACHE_SIZE:
+            sorted_items = sorted(
+                _expression_cache.items(),
+                key=lambda x: x[1][1]
+            )
+            items_to_remove = len(_expression_cache) - MAX_CACHE_SIZE
+            for key, _ in sorted_items[:items_to_remove]:
+                del _expression_cache[key]
 
-    if len(_computation_stats) > MAX_CACHE_SIZE * 2:
-        oldest_keys = sorted(
-            _computation_stats.keys(),
-            key=lambda k: _computation_stats[k]["last_seen"]
-        )[: len(_computation_stats) // 2]
-        for key in oldest_keys:
-            del _computation_stats[key]
+        if len(_ast_cache) > MAX_CACHE_SIZE:
+            keys_to_remove = list(_ast_cache.keys())[: len(_ast_cache) // 2]
+            for key in keys_to_remove:
+                del _ast_cache[key]
 
+def get_cached_result(expression: str) -> Optional[str]:
+    with _cache_lock:
+        if expression not in _expression_cache:
+            return None
 
-def get_cached_result(expression: str) -> str | None:
-    if expression not in _expression_cache:
-        return None
+        result, timestamp = _expression_cache[expression]
+        if time.time() - timestamp > CACHE_TTL:
+            del _expression_cache[expression]
+            return None
 
-    result, timestamp = _expression_cache[expression]
-    if time.time() - timestamp > CACHE_TTL:
-        del _expression_cache[expression]
-        return None
-
-    return result
-
+        return result
 
 def cache_result(expression: str, result: str) -> None:
-    _expression_cache[expression] = (result, time.time())
+    with _cache_lock:
+        _expression_cache[expression] = (result, time.time())
 
-    if len(_expression_cache) % 100 == 0:
-        cleanup_caches()
+        if len(_expression_cache) % 100 == 0:
+            cleanup_caches()
 
-
-def get_cached_ast(expression: str) -> ast.AST | None:
-    return _ast_cache.get(expression)
-
+def get_cached_ast(expression: str) -> Optional[ast.AST]:
+    with _cache_lock:
+        return _ast_cache.get(expression)
 
 def cache_ast(expression: str, tree: ast.AST) -> None:
-    _ast_cache[expression] = tree
-
+    with _cache_lock:
+        _ast_cache[expression] = tree
 
 def sanitize_expression(expr: str) -> str:
     sanitized = ''.join(char for char in expr if ord(char) >= 32 or char in ' \\t')
-
     sanitized = ' '.join(sanitized.split())
 
     dangerous_sequences = ['..', '__', '$$', '@@', '##']
@@ -305,69 +475,89 @@ def sanitize_expression(expr: str) -> str:
 
     return sanitized
 
-
 def preprocess_expression(expr: str) -> str:
     expr = expr.replace("×", "*")
     expr = expr.replace("÷", "/")
     expr = expr.replace("^", "**")
     return expr
 
-
-def validate_ast_node(node: ast.AST, depth: int = 0) -> bool:
+def validate_ast_node(node: ast.AST, depth: int = 0, session_vars: Optional[Dict] = None) -> bool:
     if depth > MAX_EXPRESSION_DEPTH:
         raise ValueError(f"Expression too complex (max depth: {MAX_EXPRESSION_DEPTH})")
+
     if isinstance(node, ast.Expression):
-        return validate_ast_node(node.body, depth + 1)
+        return validate_ast_node(node.body, depth + 1, session_vars)
 
     if isinstance(node, ast.Constant):
-        return isinstance(node.value, (int, float, complex))
+        return isinstance(node.value, (int, float, complex, str))
 
     if isinstance(node, ast.Name):
-        return node.id in MATH_CONSTANTS or node.id in MATH_FUNCTIONS
+        if session_vars and node.id in session_vars:
+            return True
+        return node.id in MATH_CONSTANTS or node.id in ALL_FUNCTIONS
 
     if isinstance(node, ast.UnaryOp):
-        return type(node.op) in OPERATORS and validate_ast_node(node.operand, depth + 1)
+        return type(node.op) in OPERATORS and validate_ast_node(node.operand, depth + 1, session_vars)
 
     if isinstance(node, ast.BinOp):
         return (
             type(node.op) in OPERATORS
-            and validate_ast_node(node.left, depth + 1)
-            and validate_ast_node(node.right, depth + 1)
+            and validate_ast_node(node.left, depth + 1, session_vars)
+            and validate_ast_node(node.right, depth + 1, session_vars)
+        )
+
+    if isinstance(node, ast.Compare):
+        if len(node.ops) != 1 or len(node.comparators) != 1:
+            return False
+        return (
+            type(node.ops[0]) in COMPARISON_OPS
+            and validate_ast_node(node.left, depth + 1, session_vars)
+            and validate_ast_node(node.comparators[0], depth + 1, session_vars)
         )
 
     if isinstance(node, ast.Call):
         if not isinstance(node.func, ast.Name):
             return False
-        if node.func.id not in MATH_FUNCTIONS:
+        if node.func.id not in ALL_FUNCTIONS:
             return False
         if node.keywords:
             return False
-        return all(validate_ast_node(arg, depth + 1) for arg in node.args)
+        return all(validate_ast_node(arg, depth + 1, session_vars) for arg in node.args)
+
+    if isinstance(node, ast.List):
+        if len(node.elts) > MAX_LIST_SIZE:
+            raise ValueError(f"List too large (max size: {MAX_LIST_SIZE})")
+        return all(validate_ast_node(elt, depth + 1, session_vars) for elt in node.elts)
 
     return False
 
-
-def eval_node(node: ast.AST) -> int | float | complex:
+def eval_node(node: ast.AST, session_vars: Optional[Dict] = None) -> Any:
     if isinstance(node, ast.Expression):
-        return eval_node(node.body)
+        return eval_node(node.body, session_vars)
 
     if isinstance(node, ast.Constant):
+        if isinstance(node.value, str):
+            if node.value.endswith('j'):
+                return complex(node.value)
+            return node.value
         return node.value
 
     if isinstance(node, ast.Name):
+        if session_vars and node.id in session_vars:
+            return session_vars[node.id]
         if node.id in MATH_CONSTANTS:
             return MATH_CONSTANTS[node.id]
-        raise ValueError(f"Unknown constant: {node.id}")
+        raise ValueError(f"Unknown variable: {node.id}")
 
     if isinstance(node, ast.UnaryOp):
         op = OPERATORS[type(node.op)]
-        operand = eval_node(node.operand)
+        operand = eval_node(node.operand, session_vars)
         return op(operand)
 
     if isinstance(node, ast.BinOp):
         op = OPERATORS[type(node.op)]
-        left = eval_node(node.left)
-        right = eval_node(node.right)
+        left = eval_node(node.left, session_vars)
+        right = eval_node(node.right, session_vars)
 
         if isinstance(node.op, ast.Pow) and abs(right) > MAX_POWER_EXPONENT:
             raise ValueError(f"Power exponent too large (max: {MAX_POWER_EXPONENT})")
@@ -377,10 +567,16 @@ def eval_node(node: ast.AST) -> int | float | complex:
         except (OverflowError, ZeroDivisionError) as e:
             raise ValueError(f"Mathematical operation failed: {str(e)}") from e
 
+    if isinstance(node, ast.Compare):
+        left = eval_node(node.left, session_vars)
+        op = COMPARISON_OPS[type(node.ops[0])]
+        right = eval_node(node.comparators[0], session_vars)
+        return op(left, right)
+
     if isinstance(node, ast.Call):
         func_name = node.func.id
-        func = MATH_FUNCTIONS[func_name]
-        args = [eval_node(arg) for arg in node.args]
+        func = ALL_FUNCTIONS[func_name]
+        args = [eval_node(arg, session_vars) for arg in node.args]
 
         if func_name == "factorial" and len(args) == 1:
             if args[0] > MAX_FACTORIAL_INPUT:
@@ -394,19 +590,18 @@ def eval_node(node: ast.AST) -> int | float | complex:
 
         try:
             return func(*args)
-        except (OverflowError, ValueError) as e:
+        except (OverflowError, ValueError, statistics.StatisticsError) as e:
             raise ValueError(f"Mathematical operation failed: {str(e)}") from e
+
+    if isinstance(node, ast.List):
+        return [eval_node(elt, session_vars) for elt in node.elts]
 
     raise ValueError(f"Unsupported node type: {type(node).__name__}")
 
-
-def evaluate(expression: str) -> str:
+def compute_expression(expression: str, session_id: Optional[str] = None) -> CalculationResult:
     start_time = time.time()
 
     try:
-        if ENABLE_AUDIT_LOGGING:
-            logger.info(f"Evaluating expression: {expression}")
-
         validate_input_security(expression)
 
         expression = expression.strip()
@@ -418,11 +613,19 @@ def evaluate(expression: str) -> str:
 
         original_expression = expression
 
+        session_vars = {}
+        if session_id:
+            with _session_lock:
+                session_vars = _sessions.get(session_id, {})
+
         cached_result = get_cached_result(original_expression)
         if cached_result is not None:
-            if ENABLE_AUDIT_LOGGING:
-                logger.info(f"Cache hit for expression: {original_expression}")
-            return cached_result
+            return CalculationResult(
+                success=True,
+                expression=original_expression,
+                result=cached_result,
+                metadata={"cache_hit": True, "computation_time": 0}
+            )
 
         expression = sanitize_expression(expression)
         expression = preprocess_expression(expression)
@@ -434,77 +637,209 @@ def evaluate(expression: str) -> str:
                 cache_ast(expression, tree)
             except SyntaxError as e:
                 raise SyntaxError(f"Invalid mathematical expression: {str(e)}") from e
-        else:
-            if ENABLE_AUDIT_LOGGING:
-                logger.info(f"AST cache hit for expression: {expression}")
 
-        if not validate_ast_node(tree):
+        if not validate_ast_node(tree, session_vars=session_vars):
             raise ValueError("Expression contains unsupported operations")
 
-        result = eval_node(tree)
+        with computation_timeout(COMPUTATION_TIMEOUT):
+            with memory_limit(MAX_MEMORY_MB):
+                result = eval_node(tree, session_vars)
 
-        has_division = "/" in original_expression or "÷" in original_expression
-        has_float_operand = "." in original_expression
+        if isinstance(result, (int, float, complex)) and abs(result) > 10**100:
+            raise ValueError("Result too large to handle safely")
 
-        if (
-            isinstance(result, float)
-            and result.is_integer()
-            and not has_division
-            and not has_float_operand
-        ):
-            result_str = str(int(result))
-        else:
-            result_str = str(result)
+        result_str = format_calculation_output(result, original_expression)
+
+        if len(result_str) > MAX_RESULT_LENGTH:
+            raise ValueError(f"Result too large (max length: {MAX_RESULT_LENGTH})")
 
         calculation_history.add(original_expression, result_str)
-
         cache_result(original_expression, result_str)
 
         end_time = time.time()
-
         monitor_computation_performance(original_expression, start_time, end_time)
 
-        if ENABLE_AUDIT_LOGGING:
-            logger.info(f"Successfully evaluated: {original_expression} = {result_str}")
+        return CalculationResult(
+            success=True,
+            expression=original_expression,
+            result=result,
+            metadata={
+                "computation_time": end_time - start_time,
+                "cache_hit": False
+            }
+        )
 
-        return result_str
-
-    except (SyntaxError, ValueError, ZeroDivisionError, TypeError, AttributeError) as e:
-        if ENABLE_AUDIT_LOGGING:
-            logger.warning(f"Evaluation failed for '{expression}': {str(e)}")
-        raise e
+    except (SyntaxError, ValueError, ZeroDivisionError, TypeError, AttributeError, TimeoutError) as e:
+        return CalculationResult(
+            success=False,
+            expression=expression,
+            error={
+                "type": type(e).__name__,
+                "message": str(e)
+            }
+        )
     except Exception as e:
-        if ENABLE_AUDIT_LOGGING:
-            logger.error(f"Unexpected error evaluating '{expression}': {str(e)}")
-        raise ValueError(f"Calculation error: {str(e)}") from e
+        return CalculationResult(
+            success=False,
+            expression=expression,
+            error={
+                "type": "UnexpectedError",
+                "message": f"Calculation error: {str(e)}"
+            }
+        )
 
+def evaluate(expression: str, session_id: Optional[str] = None) -> str:
+    result = compute_expression(expression, session_id)
+    if result.success:
+        return format_calculation_output(result.result, expression)
+    else:
+        error_msg = result.error.get('message', 'Unknown error')
+        if 'division by zero' in error_msg.lower():
+            raise ValueError("Cannot divide by zero")
+        elif 'invalid' in error_msg.lower() or 'unsupported' in error_msg.lower():
+            raise ValueError(error_msg)
+        elif 'empty' in error_msg.lower():
+            raise SyntaxError(error_msg)
+        else:
+            raise ValueError(error_msg)
 
-async def evaluate_expression(expression: str) -> str:
-    return evaluate(expression)
+def format_calculation_output(result: Any, original_expression: str) -> str:
+    if isinstance(result, bool):
+        return str(result)
 
+    if isinstance(result, complex):
+        if result.imag == 0:
+            return format_calculation_output(result.real, original_expression)
+        return str(result)
+
+    if isinstance(result, (list, tuple)):
+        return str(result)
+
+    if isinstance(result, float):
+        has_division = "/" in original_expression or "÷" in original_expression
+        has_float_operand = "." in original_expression
+
+        if result.is_integer() and not has_division and not has_float_operand:
+            return str(int(result))
+
+        if abs(result) < 1e-10 and result != 0:
+            return f"{result:.10e}"
+        elif abs(result) > 1e10:
+            return f"{result:.6e}"
+        else:
+            return str(round(result, 10))
+
+    return str(result)
+
+def matrix_multiply(A: List[List[float]], B: List[List[float]]) -> List[List[float]]:
+    rows_A, cols_A = len(A), len(A[0]) if A else 0
+    rows_B, cols_B = len(B), len(B[0]) if B else 0
+
+    if cols_A != rows_B:
+        raise ValueError(f"Cannot multiply matrices: {cols_A} != {rows_B}")
+
+    result = [[0 for _ in range(cols_B)] for _ in range(rows_A)]
+
+    for i in range(rows_A):
+        for j in range(cols_B):
+            for k in range(cols_A):
+                result[i][j] += A[i][k] * B[k][j]
+
+    return result
+
+def matrix_determinant(matrix: List[List[float]]) -> float:
+    n = len(matrix)
+    if n == 0 or n != len(matrix[0]):
+        raise ValueError("Matrix must be square")
+
+    if n == 1:
+        return matrix[0][0]
+
+    if n == 2:
+        return matrix[0][0] * matrix[1][1] - matrix[0][1] * matrix[1][0]
+
+    det = 0
+    for j in range(n):
+        minor = [row[:j] + row[j+1:] for row in matrix[1:]]
+        det += ((-1) ** j) * matrix[0][j] * matrix_determinant(minor)
+
+    return det
+
+def matrix_inverse(matrix: List[List[float]]) -> List[List[float]]:
+    n = len(matrix)
+    det = matrix_determinant(matrix)
+
+    if abs(det) < 1e-10:
+        raise ValueError("Matrix is singular (determinant is zero)")
+
+    if n == 2:
+        return [
+            [matrix[1][1]/det, -matrix[0][1]/det],
+            [-matrix[1][0]/det, matrix[0][0]/det]
+        ]
+
+    raise ValueError("Matrix inverse only implemented for 2x2 matrices")
+
+def is_prime(n: int) -> bool:
+    if n < 2:
+        return False
+    if n == 2:
+        return True
+    if n % 2 == 0:
+        return False
+
+    for i in range(3, int(math.sqrt(n)) + 1, 2):
+        if n % i == 0:
+            return False
+    return True
+
+def prime_factors(n: int) -> List[int]:
+    factors = []
+    d = 2
+    while d * d <= n:
+        while n % d == 0:
+            factors.append(d)
+            n //= d
+        d += 1
+    if n > 1:
+        factors.append(n)
+    return factors
+
+def convert_unit(value: float, from_unit: str, to_unit: str, unit_type: str) -> float:
+    if unit_type not in UNIT_CONVERSIONS:
+        raise ValueError(f"Unknown unit type: {unit_type}")
+
+    conversions = UNIT_CONVERSIONS[unit_type]
+
+    if from_unit not in conversions or to_unit not in conversions:
+        raise ValueError(f"Unknown unit in {unit_type}: {from_unit} or {to_unit}")
+
+    if unit_type == "temperature":
+        kelvin = conversions[from_unit](value)
+        if to_unit == "K":
+            return kelvin
+        elif to_unit == "C":
+            return kelvin - 273.15
+        elif to_unit == "F":
+            return (kelvin - 273.15) * 9/5 + 32
+    else:
+        base_value = value * conversions[from_unit]
+        return base_value / conversions[to_unit]
 
 _shutdown_requested = False
 _active_computations = 0
-
 
 def signal_handler(signum: int, frame: Any) -> None:
     global _shutdown_requested
     _shutdown_requested = True
 
     signal_name = signal.Signals(signum).name
-    logger.info(f"Received {signal_name} signal, initiating graceful shutdown")
-
-    if _active_computations > 0:
-        logger.info(f"Waiting for {_active_computations} active computations to complete")
-    else:
-        logger.info("No active computations, shutting down immediately")
-
+    async_logger.log(logging.INFO, f"Received {signal_name} signal, initiating graceful shutdown")
 
 signal.signal(signal.SIGTERM, signal_handler)
 signal.signal(signal.SIGINT, signal_handler)
 
 mcp = FastMCP("MCP Math")
-
 
 @mcp.tool()
 async def get_system_metrics() -> str:
@@ -512,21 +847,36 @@ async def get_system_metrics() -> str:
     metrics = ["MCP Math System Metrics:"]
     metrics.append("="*40)
 
-    total_computations = sum(stats["count"] for stats in _computation_stats.values())
-    total_time = sum(stats["total_time"] for stats in _computation_stats.values())
-    avg_time = total_time / total_computations if total_computations > 0 else 0
+    with _metrics_lock:
+        total_computations = sum(stats["count"] for stats in _computation_stats.values())
+        total_time = sum(stats["total_time"] for stats in _computation_stats.values())
+        avg_time = total_time / total_computations if total_computations > 0 else 0
 
     metrics.append(f"Total Computations: {total_computations}")
     metrics.append(f"Average Computation Time: {avg_time:.3f}s")
     metrics.append(f"Active Computations: {_active_computations}")
 
-    active_clients = len(_request_history)
-    total_requests = sum(len(requests) for requests in _request_history.values())
+    with _rate_limit_lock:
+        active_clients = len(rate_limiter.requests)
+        total_requests = sum(len(reqs) for reqs in rate_limiter.requests.values())
+
     metrics.append(f"Active Clients: {active_clients}")
     metrics.append(f"Total Requests (current window): {total_requests}")
 
     history_size = len(calculation_history.history)
     metrics.append(f"History Entries: {history_size}/{MAX_HISTORY_SIZE}")
+
+    with _cache_lock:
+        cache_size = len(_expression_cache)
+        ast_cache_size = len(_ast_cache)
+
+    metrics.append(f"Expression Cache: {cache_size}/{MAX_CACHE_SIZE}")
+    metrics.append(f"AST Cache: {ast_cache_size}/{MAX_CACHE_SIZE}")
+
+    with _session_lock:
+        session_count = len(_sessions)
+
+    metrics.append(f"Active Sessions: {session_count}")
 
     metrics.append(f"Security Monitoring: {'Enabled' if ENABLE_AUDIT_LOGGING else 'Disabled'}")
     metrics.append(f"Rate Limiting: {'Enabled' if ENABLE_RATE_LIMITING else 'Disabled'}")
@@ -535,10 +885,11 @@ async def get_system_metrics() -> str:
     metrics.append(f"  Max Expression Length: {MAX_EXPRESSION_LENGTH}")
     metrics.append(f"  Max Expression Depth: {MAX_EXPRESSION_DEPTH}")
     metrics.append(f"  Max Computation Time: {MAX_COMPUTATION_TIME}s")
-    metrics.append(f"  Available Functions: {len(MATH_FUNCTIONS)}")
+    metrics.append(f"  Computation Timeout: {COMPUTATION_TIMEOUT}s")
+    metrics.append(f"  Memory Limit: {MAX_MEMORY_MB}MB")
+    metrics.append(f"  Available Functions: {len(ALL_FUNCTIONS)}")
 
     return "\\n".join(metrics)
-
 
 @mcp.tool()
 async def get_security_status() -> str:
@@ -550,23 +901,28 @@ async def get_security_status() -> str:
     security_info.append(f"  Status: {'Enabled' if ENABLE_RATE_LIMITING else 'Disabled'}")
     security_info.append(f"  Window: {RATE_LIMIT_WINDOW}s")
     security_info.append(f"  Max Requests: {MAX_REQUESTS_PER_WINDOW}")
-    security_info.append(f"  Active Clients: {len(_request_history)}")
+
+    with _rate_limit_lock:
+        security_info.append(f"  Active Clients: {len(rate_limiter.requests)}")
 
     security_info.append("\\nThreat Detection:")
     security_info.append(f"  Forbidden Patterns: {len(FORBIDDEN_PATTERNS)}")
     security_info.append(f"  Input Hashing: {'Enabled' if ENABLE_INPUT_HASHING else 'Disabled'}")
+    security_info.append(f"  Timeout Protection: {COMPUTATION_TIMEOUT}s")
+    security_info.append(f"  Memory Protection: {MAX_MEMORY_MB}MB")
 
     security_info.append("\\nAudit Configuration:")
     security_info.append(f"  Audit Logging: {'Enabled' if ENABLE_AUDIT_LOGGING else 'Disabled'}")
     security_info.append(f"  Security Logger: Active")
+    security_info.append(f"  Async Logging: Enabled")
 
     security_info.append("\\nResource Limits:")
     security_info.append(f"  Max Factorial: {MAX_FACTORIAL_INPUT}")
     security_info.append(f"  Max Power Exponent: {MAX_POWER_EXPONENT}")
-    security_info.append(f"  Max Recursive Calls: {MAX_RECURSIVE_CALLS}")
+    security_info.append(f"  Max Result Length: {MAX_RESULT_LENGTH}")
+    security_info.append(f"  Max List Size: {MAX_LIST_SIZE}")
 
     return "\\n".join(security_info)
-
 
 @mcp.tool()
 async def calculate(expression: str) -> str:
@@ -578,25 +934,159 @@ async def calculate(expression: str) -> str:
     _active_computations += 1
 
     try:
-        result = evaluate(expression)
-        return f"Result: {result}"
+        result = compute_expression(expression)
+        return result.to_string()
     except Exception as e:
         return f"Error: {str(e)}"
     finally:
         _active_computations -= 1
 
-
 @mcp.tool()
-async def batch_calculate(expressions: list[str]) -> str:
+async def batch_calculate(expressions: List[str]) -> str:
     results = []
     for expr in expressions:
-        try:
-            result = evaluate(expr)
-            results.append(f"{expr} = {result}")
-        except Exception as e:
-            results.append(f"{expr} = Error: {str(e)}")
+        result = compute_expression(expr)
+        if result.success:
+            results.append(f"{expr} = {result.result}")
+        else:
+            results.append(f"{expr} = Error: {result.error['message']}")
     return "\\n".join(results)
 
+@mcp.tool()
+async def statistics(data: List[float], operation: str) -> str:
+    try:
+        if operation not in STATISTICS_FUNCTIONS:
+            return f"Error: Unknown operation {operation}"
+
+        func = STATISTICS_FUNCTIONS[operation]
+        result = func(data)
+
+        return f"Result: {result}"
+    except statistics.StatisticsError as e:
+        return f"Error: {str(e)}"
+    except Exception as e:
+        return f"Error: {str(e)}"
+
+@mcp.tool()
+async def matrix_operation(matrices: List[List[List[float]]], operation: str) -> str:
+    try:
+        if operation == "multiply":
+            if len(matrices) != 2:
+                return "Error: Matrix multiply requires exactly 2 matrices"
+            result = matrix_multiply(matrices[0], matrices[1])
+            return f"Result: {result}"
+
+        elif operation == "determinant":
+            if len(matrices) != 1:
+                return "Error: Determinant requires exactly 1 matrix"
+            result = matrix_determinant(matrices[0])
+            return f"Result: {result}"
+
+        elif operation == "inverse":
+            if len(matrices) != 1:
+                return "Error: Inverse requires exactly 1 matrix"
+            result = matrix_inverse(matrices[0])
+            return f"Result: {result}"
+
+        else:
+            return f"Error: Unknown operation {operation}"
+
+    except Exception as e:
+        return f"Error: {str(e)}"
+
+@mcp.tool()
+async def convert_units(value: float, from_unit: str, to_unit: str, unit_type: str) -> str:
+    try:
+        result = convert_unit(value, from_unit, to_unit, unit_type)
+        return f"Result: {value} {from_unit} = {result} {to_unit}"
+    except Exception as e:
+        return f"Error: {str(e)}"
+
+@mcp.tool()
+async def number_theory(n: int, operation: str) -> str:
+    try:
+        if operation == "is_prime":
+            result = is_prime(n)
+            return f"Result: {n} is {'prime' if result else 'not prime'}"
+
+        elif operation == "prime_factors":
+            result = prime_factors(n)
+            return f"Result: Prime factors of {n} = {result}"
+
+        elif operation == "divisors":
+            divisors = [i for i in range(1, n+1) if n % i == 0]
+            return f"Result: Divisors of {n} = {divisors}"
+
+        elif operation == "totient":
+            result = sum(1 for i in range(1, n) if math.gcd(i, n) == 1)
+            return f"Result: Euler's totient of {n} = {result}"
+
+        else:
+            return f"Error: Unknown operation {operation}"
+
+    except Exception as e:
+        return f"Error: {str(e)}"
+
+@mcp.tool()
+async def create_session(session_id: Optional[str] = None, variables: Optional[Dict[str, float]] = None) -> str:
+    try:
+        if not session_id:
+            session_id = f"session_{int(time.time()*1000)}"
+
+        with _session_lock:
+            _sessions[session_id] = variables or {}
+
+        return f"Session created: {session_id}"
+    except Exception as e:
+        return f"Error: {str(e)}"
+
+@mcp.tool()
+async def calculate_in_session(session_id: str, expression: str, save_as: Optional[str] = None) -> str:
+    global _active_computations
+
+    if _shutdown_requested:
+        return "Error: Server is shutting down"
+
+    _active_computations += 1
+
+    try:
+        result = compute_expression(expression, session_id)
+
+        if result.success and save_as:
+            with _session_lock:
+                if session_id not in _sessions:
+                    _sessions[session_id] = {}
+                _sessions[session_id][save_as] = result.result
+
+        return result.to_string()
+    except Exception as e:
+        return f"Error: {str(e)}"
+    finally:
+        _active_computations -= 1
+
+@mcp.tool()
+async def list_session_variables(session_id: str) -> str:
+    with _session_lock:
+        if session_id not in _sessions:
+            return f"Error: Session {session_id} not found"
+
+        variables = _sessions[session_id]
+        if not variables:
+            return "No variables in session"
+
+        lines = ["Session Variables:"]
+        for name, value in variables.items():
+            lines.append(f"  {name} = {value}")
+
+        return "\\n".join(lines)
+
+@mcp.tool()
+async def delete_session(session_id: str) -> str:
+    with _session_lock:
+        if session_id in _sessions:
+            del _sessions[session_id]
+            return f"Session {session_id} deleted"
+        return f"Session {session_id} not found"
 
 @mcp.tool()
 async def get_calculation_history(limit: int = 10) -> str:
@@ -612,26 +1102,41 @@ async def get_calculation_history(limit: int = 10) -> str:
         lines.append(f"  {entry['expression']} = {entry['result']} ({entry['timestamp']})")
     return "\\n".join(lines)
 
-
 @mcp.tool()
 async def clear_history() -> str:
     calculation_history.clear()
     return "Calculation history cleared successfully"
 
-
 @mcp.tool()
 async def list_functions() -> str:
     lines = ["Available Mathematical Functions and Constants:"]
-    lines.append("\\nFunctions:")
-    for func in sorted(MATH_FUNCTIONS.keys()):
+
+    lines.append("\\nBasic Math Functions:")
+    basic_funcs = ["sin", "cos", "tan", "sqrt", "exp", "log", "log10", "log2", "pow", "factorial"]
+    for func in sorted(f for f in MATH_FUNCTIONS.keys() if f in basic_funcs):
         lines.append(f"  {func}")
+
+    lines.append("\\nStatistics Functions:")
+    for func in sorted(STATISTICS_FUNCTIONS.keys()):
+        lines.append(f"  {func}")
+
+    lines.append("\\nComplex Number Functions:")
+    for func in sorted(COMPLEX_FUNCTIONS.keys()):
+        lines.append(f"  {func}")
+
     lines.append("\\nConstants:")
     for const in sorted(MATH_CONSTANTS.keys()):
-        lines.append(f"  {const}")
+        lines.append(f"  {const} = {MATH_CONSTANTS[const]}")
+
     lines.append("\\nOperators:")
     lines.append("  +, -, *, /, //, %, **, ×, ÷, ^")
-    return "\\n".join(lines)
+    lines.append("  ==, !=, <, <=, >, >=")
 
+    lines.append("\\nUnit Types:")
+    for unit_type in UNIT_CONVERSIONS.keys():
+        lines.append(f"  {unit_type}: {', '.join(UNIT_CONVERSIONS[unit_type].keys())}")
+
+    return "\\n".join(lines)
 
 @mcp.resource("history://recent")
 async def get_recent_history() -> str:
@@ -643,7 +1148,6 @@ async def get_recent_history() -> str:
     for entry in history:
         lines.append(f"  {entry['expression']} = {entry['result']}")
     return "\\n".join(lines)
-
 
 @mcp.resource("functions://available")
 async def get_available_functions() -> str:
@@ -664,26 +1168,17 @@ async def get_available_functions() -> str:
         if func in MATH_FUNCTIONS:
             lines.append(f"  {func}")
 
+    lines.append("\\nStatistical:")
+    for func in sorted(STATISTICS_FUNCTIONS.keys()):
+        lines.append(f"  {func}")
+
     lines.append("\\nOther:")
     other_funcs = sorted(
         set(MATH_FUNCTIONS.keys())
         - {
-            "sin",
-            "cos",
-            "tan",
-            "asin",
-            "acos",
-            "atan",
-            "sinh",
-            "cosh",
-            "tanh",
-            "asinh",
-            "acosh",
-            "atanh",
-            "log",
-            "log10",
-            "log2",
-            "exp",
+            "sin", "cos", "tan", "asin", "acos", "atan",
+            "sinh", "cosh", "tanh", "asinh", "acosh", "atanh",
+            "log", "log10", "log2", "exp",
         }
     )
     for func in other_funcs:
@@ -691,17 +1186,12 @@ async def get_available_functions() -> str:
 
     return "\\n".join(lines)
 
-
 @mcp.resource("constants://math")
 async def get_math_constants() -> str:
     lines = ["Mathematical Constants:"]
-    lines.append(f"  pi = {math.pi}")
-    lines.append(f"  e = {math.e}")
-    lines.append(f"  tau = {math.tau}")
-    lines.append("  inf = infinity")
-    lines.append("  nan = not a number")
+    for name, value in MATH_CONSTANTS.items():
+        lines.append(f"  {name} = {value}")
     return "\\n".join(lines)
-
 
 @mcp.prompt()
 async def scientific_calculation() -> str:
@@ -720,8 +1210,11 @@ Scientific Functions:
 - Square root: sqrt(16)
 - Exponential: exp(1)
 
-What calculation would you like me to perform?"""
+Statistics:
+- mean([1,2,3,4,5])
+- stdev([1,2,3,4,5])
 
+What calculation would you like me to perform?"""
 
 @mcp.prompt()
 async def batch_calculation() -> str:
@@ -731,20 +1224,18 @@ Example: ["2 + 2", "sin(pi/2)", "sqrt(16) * cos(0)", "factorial(5)", "log10(1000
 
 What expressions would you like to calculate?"""
 
-
 def main() -> None:
     if ENABLE_AUDIT_LOGGING:
-        logger.info("Starting MCP Math server with production configuration")
-        logger.info(f"Available functions: {len(MATH_FUNCTIONS)}")
-        logger.info(f"Security limits: expression_length={MAX_EXPRESSION_LENGTH}, depth={MAX_EXPRESSION_DEPTH}")
+        async_logger.log(logging.INFO, "Starting Enhanced MCP Math server")
+        async_logger.log(logging.INFO, f"Available functions: {len(ALL_FUNCTIONS)}")
+        async_logger.log(logging.INFO, f"Security: timeout={COMPUTATION_TIMEOUT}s, memory={MAX_MEMORY_MB}MB")
 
     try:
         mcp.run()
     except Exception as e:
         if ENABLE_AUDIT_LOGGING:
-            logger.critical(f"Failed to start MCP Math server: {str(e)}")
+            async_logger.log(logging.CRITICAL, f"Failed to start MCP Math server: {str(e)}")
         raise
-
 
 if __name__ == "__main__":
     main()
