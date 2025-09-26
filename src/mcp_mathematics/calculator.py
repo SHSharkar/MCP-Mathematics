@@ -14,19 +14,23 @@ from dataclasses import dataclass, field
 from threading import RLock
 from typing import Annotated, Any
 
-from fastmcp import FastMCP, Context
+from fastmcp import Context, FastMCP
+
 
 @dataclass
 class MatrixOperationChoice:
     matrix_operation_type: str
 
+
 @dataclass
 class NumberTheoryOperationChoice:
     number_theory_operation_type: str
 
+
 @dataclass
 class StatisticsOperationChoice:
     statistical_operation_type: str
+
 
 MAXIMUM_MATHEMATICAL_EXPRESSION_CHARACTER_LIMIT = 1000
 MAXIMUM_AST_NODE_DEPTH_LIMIT = 10
@@ -76,7 +80,6 @@ SESSION_CLEANUP_INTERVAL = 600
 _memory_cleanup_timer = None
 
 
-
 class LRUExpressionCache:
     def __init__(self, max_size: int = MAXIMUM_CACHE_SIZE):
         self.max_size = max_size
@@ -108,7 +111,9 @@ class LRUExpressionCache:
 
 
 class TTLResultCache:
-    def __init__(self, max_size: int = MAXIMUM_CACHE_SIZE, time_to_live: float = CACHE_TIME_TO_LIVE_SECONDS):
+    def __init__(
+        self, max_size: int = MAXIMUM_CACHE_SIZE, time_to_live: float = CACHE_TIME_TO_LIVE_SECONDS
+    ):
         self.max_size = max_size
         self.time_to_live = time_to_live
         self.cache = OrderedDict()
@@ -156,7 +161,11 @@ class TTLResultCache:
 
 
 class CalculationSessionManager:
-    def __init__(self, max_sessions: int = MAXIMUM_SESSIONS, session_time_to_live: float = MAXIMUM_SESSION_TIME_TO_LIVE_SECONDS):
+    def __init__(
+        self,
+        max_sessions: int = MAXIMUM_SESSIONS,
+        session_time_to_live: float = MAXIMUM_SESSION_TIME_TO_LIVE_SECONDS,
+    ):
         self.max_sessions = max_sessions
         self.session_time_to_live = session_time_to_live
         self.sessions = OrderedDict()
@@ -238,11 +247,13 @@ _parsed_expression_ast_cache = None
 _computation_stats = None
 _session_manager = None
 
+
 def _get_expression_cache():
     global _expression_cache
     if _expression_cache is None:
         _expression_cache = TTLResultCache(MAXIMUM_CACHE_SIZE, CACHE_TIME_TO_LIVE_SECONDS)
     return _expression_cache
+
 
 def _get_parsed_cache():
     global _parsed_expression_ast_cache
@@ -250,11 +261,13 @@ def _get_parsed_cache():
         _parsed_expression_ast_cache = LRUExpressionCache(MAXIMUM_CACHE_SIZE)
     return _parsed_expression_ast_cache
 
+
 def _get_computation_stats():
     global _computation_stats
     if _computation_stats is None:
         _computation_stats = LRUExpressionCache(MAXIMUM_COMPUTATION_STATISTICS)
     return _computation_stats
+
 
 def _get_session_manager():
     global _session_manager
@@ -338,6 +351,7 @@ mathematical_computation_rate_limiter = ComputationRateLimiter(
 @contextmanager
 def mathematical_computation_timeout(seconds: float):
     from threading import Timer
+
     timeout_occurred = threading.Event()
 
     def timeout_callback():
@@ -937,8 +951,6 @@ def cleanup_expired_cache_entries() -> dict[str, int]:
     return cleanup_stats
 
 
-
-
 def get_memory_usage_stats() -> dict[str, Any]:
     import os
 
@@ -1303,9 +1315,15 @@ def format_calculation_output(result: Any, original_expression: str) -> str:
     return str(result)
 
 
-def matrix_multiply(first_matrix: list[list[float]], second_matrix: list[list[float]]) -> list[list[float]]:
-    first_matrix_rows, first_matrix_cols = len(first_matrix), len(first_matrix[0]) if first_matrix else 0
-    second_matrix_rows, second_matrix_cols = len(second_matrix), len(second_matrix[0]) if second_matrix else 0
+def matrix_multiply(
+    first_matrix: list[list[float]], second_matrix: list[list[float]]
+) -> list[list[float]]:
+    first_matrix_rows, first_matrix_cols = len(first_matrix), (
+        len(first_matrix[0]) if first_matrix else 0
+    )
+    second_matrix_rows, second_matrix_cols = len(second_matrix), (
+        len(second_matrix[0]) if second_matrix else 0
+    )
 
     if first_matrix_cols != second_matrix_rows:
         raise ValueError(f"Cannot multiply matrices: {first_matrix_cols} != {second_matrix_rows}")
@@ -1315,7 +1333,9 @@ def matrix_multiply(first_matrix: list[list[float]], second_matrix: list[list[fl
     for row_index in range(first_matrix_rows):
         for column_index in range(second_matrix_cols):
             for inner_index in range(first_matrix_cols):
-                result[row_index][column_index] += first_matrix[row_index][inner_index] * second_matrix[inner_index][column_index]
+                result[row_index][column_index] += (
+                    first_matrix[row_index][inner_index] * second_matrix[inner_index][column_index]
+                )
 
     return result
 
@@ -1334,7 +1354,9 @@ def matrix_determinant(matrix: list[list[float]]) -> float:
     determinant_value = 0
     for column_index in range(matrix_dimension):
         minor = [row[:column_index] + row[column_index + 1 :] for row in matrix[1:]]
-        determinant_value += ((-1) ** column_index) * matrix[0][column_index] * matrix_determinant(minor)
+        determinant_value += (
+            ((-1) ** column_index) * matrix[0][column_index] * matrix_determinant(minor)
+        )
 
     return determinant_value
 
@@ -1363,7 +1385,10 @@ def is_prime(candidate_number: int) -> bool:
     if candidate_number % 2 == 0:
         return False
 
-    return all(candidate_number % potential_divisor != 0 for potential_divisor in range(3, int(math.sqrt(candidate_number)) + 1, 2))
+    return all(
+        candidate_number % potential_divisor != 0
+        for potential_divisor in range(3, int(math.sqrt(candidate_number)) + 1, 2)
+    )
 
 
 def prime_factors(input_number: int) -> list[int]:
@@ -1393,11 +1418,11 @@ def parse_natural_language_conversion(text: str) -> tuple[float, str, str, str] 
     text = text.lower().strip()
 
     patterns = [
-        r'(?:convert|change)\s+(\d*\.?\d+)\s+(\w+)\s+(?:to|into)\s+(\w+)',
-        r'(?:what\s+is\s+)?(\d*\.?\d+)\s+(\w+)\s+(?:in|to|as)\s+(\w+)',
-        r'(\d*\.?\d+)\s+(\w+)\s*->\s*(\w+)',
-        r'(\d*\.?\d+)\s+(\w+)\s+equals?\s+how\s+many\s+(\w+)',
-        r'from\s+(\d*\.?\d+)\s+(\w+)\s+to\s+(\w+)',
+        r"(?:convert|change)\s+(\d*\.?\d+)\s+(\w+)\s+(?:to|into)\s+(\w+)",
+        r"(?:what\s+is\s+)?(\d*\.?\d+)\s+(\w+)\s+(?:in|to|as)\s+(\w+)",
+        r"(\d*\.?\d+)\s+(\w+)\s*->\s*(\w+)",
+        r"(\d*\.?\d+)\s+(\w+)\s+equals?\s+how\s+many\s+(\w+)",
+        r"from\s+(\d*\.?\d+)\s+(\w+)\s+to\s+(\w+)",
     ]
 
     for pattern in patterns:
@@ -1409,7 +1434,7 @@ def parse_natural_language_conversion(text: str) -> tuple[float, str, str, str] 
                 to_unit = match.group(3).strip()
 
                 from_unit_resolved = resolve_unit_alias(from_unit)
-                to_unit_resolved = resolve_unit_alias(to_unit)
+                resolve_unit_alias(to_unit)
 
                 unit_type = detect_unit_type(from_unit_resolved)
                 if unit_type:
@@ -1714,8 +1739,6 @@ _shutdown_requested = False
 _active_mathematical_computations = 0
 
 
-
-
 mcp = FastMCP("MCP Mathematics")
 
 
@@ -1895,7 +1918,7 @@ async def compute_statistical_operations(data: list[float], operation: str, ctx:
         if operation not in STATISTICS_FUNCTIONS:
             elicit_result = await ctx.elicit(
                 message=f"Unknown operation '{operation}'. Please select a statistical operation:",
-                response_type=StatisticsOperationChoice
+                response_type=StatisticsOperationChoice,
             )
 
             if elicit_result.action == "accept":
@@ -1920,7 +1943,9 @@ async def compute_statistical_operations(data: list[float], operation: str, ctx:
 
 
 @mcp.tool()
-async def perform_matrix_mathematical_operations(matrices: list[list[list[float]]], operation: str, ctx: Context) -> str:
+async def perform_matrix_mathematical_operations(
+    matrices: list[list[list[float]]], operation: str, ctx: Context
+) -> str:
     """Perform matrix operations including multiplication, transpose, determinant, and inverse."""
     try:
         if operation == "multiply":
@@ -1950,7 +1975,7 @@ async def perform_matrix_mathematical_operations(matrices: list[list[list[float]
         else:
             elicit_result = await ctx.elicit(
                 message=f"Unknown operation '{operation}'. Please select a matrix operation:",
-                response_type=MatrixOperationChoice
+                response_type=MatrixOperationChoice,
             )
 
             if elicit_result.action == "accept":
@@ -1986,7 +2011,9 @@ async def perform_matrix_mathematical_operations(matrices: list[list[list[float]
 
 
 @mcp.tool()
-async def convert_between_measurement_units(value: float, from_unit: str, to_unit: str, unit_type: str) -> str:
+async def convert_between_measurement_units(
+    value: float, from_unit: str, to_unit: str, unit_type: str
+) -> str:
     """Convert between different units of measurement across 158 supported conversions."""
     try:
         from_unit_resolved = resolve_unit_alias(from_unit)
@@ -2012,44 +2039,45 @@ async def convert_units_from_natural_language(query: str) -> str:
     try:
         parsed = parse_natural_language_conversion(query)
         if not parsed:
-            return json.dumps({
-                "success": False,
-                "error": "parse_failed",
-                "query": query,
-                "supported_patterns": [
-                    "convert X unit to unit",
-                    "what is X unit in unit",
-                    "X unit -> unit",
-                    "X unit equals how many unit",
-                    "from X unit to unit"
-                ]
-            })
+            return json.dumps(
+                {
+                    "success": False,
+                    "error": "parse_failed",
+                    "query": query,
+                    "supported_patterns": [
+                        "convert X unit to unit",
+                        "what is X unit in unit",
+                        "X unit -> unit",
+                        "X unit equals how many unit",
+                        "from X unit to unit",
+                    ],
+                }
+            )
 
         value, from_unit, to_unit, unit_type = parsed
         from_unit_resolved = resolve_unit_alias(from_unit)
         to_unit_resolved = resolve_unit_alias(to_unit)
         result = convert_unit(value, from_unit_resolved, to_unit_resolved, unit_type)
 
-        return json.dumps({
-            "success": True,
-            "conversion": {
-                "original_query": query,
-                "input_value": value,
-                "input_unit": from_unit,
-                "output_value": result,
-                "output_unit": to_unit,
-                "unit_type": unit_type,
-                "resolved_input_unit": from_unit_resolved,
-                "resolved_output_unit": to_unit_resolved
+        return json.dumps(
+            {
+                "success": True,
+                "conversion": {
+                    "original_query": query,
+                    "input_value": value,
+                    "input_unit": from_unit,
+                    "output_value": result,
+                    "output_unit": to_unit,
+                    "unit_type": unit_type,
+                    "resolved_input_unit": from_unit_resolved,
+                    "resolved_output_unit": to_unit_resolved,
+                },
             }
-        })
+        )
     except Exception as e:
-        return json.dumps({
-            "success": False,
-            "error": "conversion_failed",
-            "details": str(e),
-            "query": query
-        })
+        return json.dumps(
+            {"success": False, "error": "conversion_failed", "details": str(e), "query": query}
+        )
 
 
 @mcp.tool()
@@ -2083,7 +2111,7 @@ async def perform_number_theory_analysis(n: int, operation: str, ctx: Context) -
         else:
             elicit_result = await ctx.elicit(
                 message=f"Unknown operation '{operation}'. Please select a number theory operation:",
-                response_type=NumberTheoryOperationChoice
+                response_type=NumberTheoryOperationChoice,
             )
 
             if elicit_result.action == "accept":
@@ -2133,7 +2161,9 @@ async def create_mathematical_calculation_session(
 
 
 @mcp.tool()
-async def evaluate_expression_in_session_context(session_id: str, expression: str, save_as: str | None = None) -> str:
+async def evaluate_expression_in_session_context(
+    session_id: str, expression: str, save_as: str | None = None
+) -> str:
     """Execute calculations within a session context, with variable storage and retrieval."""
     global _active_mathematical_computations
 
@@ -2325,16 +2355,18 @@ async def get_comprehensive_mathematical_constants_catalog() -> str:
 
 @mcp.prompt()
 async def scientific_calculation(
-    expression_type: Annotated[str, "Type of calculation: general, trigonometric, logarithmic, statistical"] = "general",
+    expression_type: Annotated[
+        str, "Type of calculation: general, trigonometric, logarithmic, statistical"
+    ] = "general",
     precision: Annotated[int, "Decimal precision for results"] = 6,
-    include_steps: Annotated[bool, "Include step-by-step solution"] = False
+    include_steps: Annotated[bool, "Include step-by-step solution"] = False,
 ) -> str:
     """Generate a customized scientific calculation prompt."""
     prompts = {
         "general": f"Calculate the following expression with {precision} decimal places",
         "trigonometric": f"Solve this trigonometric problem with {precision} precision",
         "logarithmic": f"Compute this logarithmic expression to {precision} decimals",
-        "statistical": f"Perform statistical analysis with {precision} decimal accuracy"
+        "statistical": f"Perform statistical analysis with {precision} decimal accuracy",
     }
 
     base_prompt = prompts.get(expression_type, prompts["general"])
@@ -2360,7 +2392,7 @@ async def scientific_calculation(
 async def batch_calculation(
     batch_size: Annotated[int, "Number of calculations to process"] = 5,
     operation_types: Annotated[list[str], "Types of operations to include"] = None,
-    complexity: Annotated[str, "Complexity level: simple, medium, advanced"] = "medium"
+    complexity: Annotated[str, "Complexity level: simple, medium, advanced"] = "medium",
 ) -> str:
     """Generate a batch calculation prompt with the specified parameters."""
     if operation_types is None:
@@ -2369,7 +2401,13 @@ async def batch_calculation(
     examples = {
         "simple": ["2 + 2", "10 - 4", "5 * 6", "15 / 3", "2 ** 3"],
         "medium": ["2 + 2", "sin(pi/2)", "sqrt(16) * cos(0)", "factorial(5)", "log10(1000)"],
-        "advanced": ["factorial(20) / factorial(15)", "log2(256) ** sqrt(16)", "mean([1,2,3,4,5]) * stdev([1,2,3,4,5])", "gcd(48, 18) * lcm(12, 15)", "exp(log(10)) + sinh(0)"]
+        "advanced": [
+            "factorial(20) / factorial(15)",
+            "log2(256) ** sqrt(16)",
+            "mean([1,2,3,4,5]) * stdev([1,2,3,4,5])",
+            "gcd(48, 18) * lcm(12, 15)",
+            "exp(log(10)) + sinh(0)",
+        ],
     }
 
     example_list = examples.get(complexity, examples["medium"])[:batch_size]
@@ -2383,5 +2421,3 @@ What expressions would you like to calculate?"""
 
 if __name__ == "__main__":
     mcp.run()
-
-

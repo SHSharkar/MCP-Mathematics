@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 
-import os
+import argparse
 import re
 import subprocess
 import sys
-import argparse
-from pathlib import Path
-from typing import Tuple, Optional
 import tomllib
+from pathlib import Path
+
 
 class SemverPublisher:
     def __init__(self, project_root: str = "."):
@@ -23,7 +22,7 @@ class SemverPublisher:
 
         return data["project"]["version"]
 
-    def parse_semver(self, version: str) -> Tuple[int, int, int]:
+    def parse_semver(self, version: str) -> tuple[int, int, int]:
         pattern = r"^(\d+)\.(\d+)\.(\d+)(?:-.*)?(?:\+.*)?$"
         match = re.match(pattern, version)
         if not match:
@@ -43,10 +42,11 @@ class SemverPublisher:
             raise ValueError(f"Invalid bump type: {bump_type}")
 
     def update_pyproject_version(self, new_version: str) -> None:
-        with open(self.pyproject_path, "r") as f:
+        with open(self.pyproject_path) as f:
             content = f.read()
 
         pattern = r'(\[project\][\s\S]*?)version\s*=\s*"[^"]+"'
+
         def replacement_func(match):
             project_section = match.group(1)
             return f'{project_section}version = "{new_version}"'
@@ -57,19 +57,17 @@ class SemverPublisher:
             raise ValueError("Version pattern not found in pyproject.toml")
 
         if 'target-version = "' + new_version + '"' in new_content:
-            raise ValueError(f"Version update would corrupt tool configuration. Ruff target-version should not be changed to package version {new_version}")
+            raise ValueError(
+                f"Version update would corrupt tool configuration. Ruff target-version should not be changed to package version {new_version}"
+            )
 
         with open(self.pyproject_path, "w") as f:
             f.write(new_content)
 
-    def run_command(self, cmd: list, cwd: Optional[Path] = None) -> subprocess.CompletedProcess:
+    def run_command(self, cmd: list, cwd: Path | None = None) -> subprocess.CompletedProcess:
         try:
             result = subprocess.run(
-                cmd,
-                cwd=cwd or self.project_root,
-                capture_output=True,
-                text=True,
-                check=True
+                cmd, cwd=cwd or self.project_root, capture_output=True, text=True, check=True
             )
             return result
         except subprocess.CalledProcessError as e:
@@ -100,7 +98,7 @@ class SemverPublisher:
 
         self.run_command(cmd)
 
-    def git_commit_and_tag(self, version: str, message: Optional[str] = None) -> None:
+    def git_commit_and_tag(self, version: str, message: str | None = None) -> None:
         if not message:
             message = f"Release v{version}"
 
@@ -115,15 +113,21 @@ class SemverPublisher:
         except subprocess.CalledProcessError:
             return False
 
-    def publish(self, bump_type: str, dry_run: bool = False, skip_tests: bool = False,
-                repository: str = "pypi", commit_message: Optional[str] = None) -> str:
+    def publish(
+        self,
+        bump_type: str,
+        dry_run: bool = False,
+        skip_tests: bool = False,
+        repository: str = "pypi",
+        commit_message: str | None = None,
+    ) -> str:
 
         print("🚀 Starting semver-based package publishing...")
 
         if not self.check_git_status() and not dry_run:
             print("⚠️  Warning: Git working directory is not clean")
             response = input("Continue anyway? (y/N): ")
-            if response.lower() != 'y':
+            if response.lower() != "y":
                 print("Aborted.")
                 return ""
 
@@ -174,20 +178,17 @@ class SemverPublisher:
             print("💡 You may need to manually revert version changes")
             raise
 
+
 def main():
     parser = argparse.ArgumentParser(description="Semver-based package publishing")
-    parser.add_argument("bump_type", choices=["major", "minor", "patch"],
-                       help="Version bump type")
-    parser.add_argument("--dry-run", action="store_true",
-                       help="Show what would be done without making changes")
-    parser.add_argument("--skip-tests", action="store_true",
-                       help="Skip running tests")
-    parser.add_argument("--repository", default="pypi",
-                       help="PyPI repository (default: pypi)")
-    parser.add_argument("--message",
-                       help="Custom commit message")
-    parser.add_argument("--project-root", default=".",
-                       help="Project root directory")
+    parser.add_argument("bump_type", choices=["major", "minor", "patch"], help="Version bump type")
+    parser.add_argument(
+        "--dry-run", action="store_true", help="Show what would be done without making changes"
+    )
+    parser.add_argument("--skip-tests", action="store_true", help="Skip running tests")
+    parser.add_argument("--repository", default="pypi", help="PyPI repository (default: pypi)")
+    parser.add_argument("--message", help="Custom commit message")
+    parser.add_argument("--project-root", default=".", help="Project root directory")
 
     args = parser.parse_args()
 
@@ -198,12 +199,12 @@ def main():
             dry_run=args.dry_run,
             skip_tests=args.skip_tests,
             repository=args.repository,
-            commit_message=args.message
+            commit_message=args.message,
         )
 
         if not args.dry_run:
-            print(f"\n✨ Next steps:")
-            print(f"   git push origin main")
+            print("\n✨ Next steps:")
+            print("   git push origin main")
             print(f"   git push origin v{new_version}")
 
     except KeyboardInterrupt:
@@ -212,6 +213,7 @@ def main():
     except Exception as e:
         print(f"\n❌ Error: {e}")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()
