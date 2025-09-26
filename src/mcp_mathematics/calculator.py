@@ -1879,7 +1879,9 @@ async def matrix_operation(matrices: list[list[list[float]]], operation: str) ->
 async def convert_units(value: float, from_unit: str, to_unit: str, unit_type: str) -> str:
     """Convert between different units of measurement across 158 supported conversions."""
     try:
-        result = convert_unit(value, from_unit, to_unit, unit_type)
+        from_unit_resolved = resolve_unit_alias(from_unit)
+        to_unit_resolved = resolve_unit_alias(to_unit)
+        result = convert_unit(value, from_unit_resolved, to_unit_resolved, unit_type)
         return f"Result: {value} {from_unit} = {result} {to_unit}"
     except Exception as e:
         return f"Error: {str(e)}"
