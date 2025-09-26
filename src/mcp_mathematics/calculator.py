@@ -1720,7 +1720,7 @@ mcp = FastMCP("MCP Mathematics")
 
 
 @mcp.tool()
-async def get_system_metrics() -> str:
+async def get_mathematical_computation_performance_metrics() -> str:
     """Get comprehensive system performance metrics including computation statistics and uptime."""
     metrics = ["MCP Mathematics System Metrics:"]
     metrics.append("=" * 40)
@@ -1785,7 +1785,7 @@ async def get_system_metrics() -> str:
 
 
 @mcp.tool()
-async def get_security_status() -> str:
+async def get_mathematical_security_audit_report() -> str:
     """Get the current security status including rate limiting and session information."""
     security_info = ["MCP Mathematics Security Status:"]
     security_info.append("=" * 35)
@@ -1823,7 +1823,7 @@ async def get_security_status() -> str:
 
 
 @mcp.tool()
-async def get_memory_usage() -> str:
+async def get_mathematical_memory_usage_statistics() -> str:
     """Get detailed memory usage statistics for cache and session management."""
     try:
         stats = get_memory_usage_stats()
@@ -1852,7 +1852,7 @@ async def get_memory_usage() -> str:
 
 
 @mcp.tool()
-async def calculate(expression: str) -> str:
+async def evaluate_mathematical_expression(expression: str) -> str:
     """Evaluate a mathematical expression and return the result with automatic history tracking."""
     global _active_mathematical_computations
 
@@ -1871,7 +1871,7 @@ async def calculate(expression: str) -> str:
 
 
 @mcp.tool()
-async def batch_calculate(expressions: list[str], ctx: Context) -> str:
+async def evaluate_multiple_mathematical_expressions(expressions: list[str], ctx: Context) -> str:
     """Process multiple mathematical expressions in a single batch operation."""
     results = []
     total_expressions = len(expressions)
@@ -1889,7 +1889,7 @@ async def batch_calculate(expressions: list[str], ctx: Context) -> str:
 
 
 @mcp.tool()
-async def calculate_statistics(data: list[float], operation: str, ctx: Context) -> str:
+async def compute_statistical_operations(data: list[float], operation: str, ctx: Context) -> str:
     """Calculate statistical measures for a dataset including mean, median, mode, variance, and standard deviation."""
     try:
         if operation not in STATISTICS_FUNCTIONS:
@@ -1920,7 +1920,7 @@ async def calculate_statistics(data: list[float], operation: str, ctx: Context) 
 
 
 @mcp.tool()
-async def matrix_operation(matrices: list[list[list[float]]], operation: str, ctx: Context) -> str:
+async def perform_matrix_mathematical_operations(matrices: list[list[list[float]]], operation: str, ctx: Context) -> str:
     """Perform matrix operations including multiplication, transpose, determinant, and inverse."""
     try:
         if operation == "multiply":
@@ -1986,7 +1986,7 @@ async def matrix_operation(matrices: list[list[list[float]]], operation: str, ct
 
 
 @mcp.tool()
-async def convert_units(value: float, from_unit: str, to_unit: str, unit_type: str) -> str:
+async def convert_between_measurement_units(value: float, from_unit: str, to_unit: str, unit_type: str) -> str:
     """Convert between different units of measurement across 158 supported conversions."""
     try:
         from_unit_resolved = resolve_unit_alias(from_unit)
@@ -1998,7 +1998,7 @@ async def convert_units(value: float, from_unit: str, to_unit: str, unit_type: s
 
 
 @mcp.tool()
-async def convert_units_natural(query: str) -> str:
+async def convert_units_from_natural_language(query: str) -> str:
     """Convert units using natural language queries.
 
     Args:
@@ -2053,7 +2053,7 @@ async def convert_units_natural(query: str) -> str:
 
 
 @mcp.tool()
-async def analyze_number_theory(n: int, operation: str, ctx: Context) -> str:
+async def perform_number_theory_analysis(n: int, operation: str, ctx: Context) -> str:
     """Analyze number theory properties including primality, factors, GCD, LCM, and Fibonacci."""
     try:
         if operation == "is_prime":
@@ -2118,7 +2118,7 @@ async def analyze_number_theory(n: int, operation: str, ctx: Context) -> str:
 
 
 @mcp.tool()
-async def create_session(
+async def create_mathematical_calculation_session(
     session_id: str | None = None, variables: dict[str, float] | None = None
 ) -> str:
     """Create a new calculation session with optional initial variables for stateful computations."""
@@ -2133,7 +2133,7 @@ async def create_session(
 
 
 @mcp.tool()
-async def calculate_in_session(session_id: str, expression: str, save_as: str | None = None) -> str:
+async def evaluate_expression_in_session_context(session_id: str, expression: str, save_as: str | None = None) -> str:
     """Execute calculations within a session context, with variable storage and retrieval."""
     global _active_mathematical_computations
 
@@ -2156,7 +2156,7 @@ async def calculate_in_session(session_id: str, expression: str, save_as: str | 
 
 
 @mcp.tool()
-async def list_session_variables(session_id: str) -> str:
+async def list_mathematical_session_variables(session_id: str) -> str:
     """List all variables stored in the specified calculation session."""
     variables = _get_session_manager().get_session(session_id)
     if variables is None:
@@ -2173,7 +2173,7 @@ async def list_session_variables(session_id: str) -> str:
 
 
 @mcp.tool()
-async def delete_session(session_id: str) -> str:
+async def delete_mathematical_calculation_session(session_id: str) -> str:
     """Delete a calculation session and free its associated resources."""
     if _get_session_manager().delete_session(session_id):
         return f"Session {session_id} deleted"
@@ -2181,7 +2181,7 @@ async def delete_session(session_id: str) -> str:
 
 
 @mcp.tool()
-async def get_calculation_history(limit: int = 10) -> str:
+async def get_mathematical_computation_history(limit: int = 10) -> str:
     """Retrieve recent calculation history with expressions and results."""
     if limit > CALCULATION_HISTORY_ENTRY_LIMIT:
         limit = CALCULATION_HISTORY_ENTRY_LIMIT
@@ -2197,14 +2197,14 @@ async def get_calculation_history(limit: int = 10) -> str:
 
 
 @mcp.tool()
-async def clear_history() -> str:
+async def clear_mathematical_computation_history() -> str:
     """Clear all stored calculation history entries."""
     mathematical_calculation_history.clear()
     return "Calculation history cleared successfully"
 
 
 @mcp.tool()
-async def cleanup_memory() -> str:
+async def optimize_mathematical_computation_memory() -> str:
     """Clean up expired cache entries and optimize memory usage."""
     try:
         cleanup_stats = cleanup_expired_cache_entries()
@@ -2220,7 +2220,7 @@ async def cleanup_memory() -> str:
 
 
 @mcp.tool()
-async def list_functions() -> str:
+async def list_all_available_mathematical_functions_and_constants() -> str:
     """List all available mathematical functions, constants, and supported operations."""
     lines = ["Available Mathematical Functions and Constants:"]
 
@@ -2253,7 +2253,7 @@ async def list_functions() -> str:
 
 
 @mcp.resource("history://recent")
-async def get_recent_history() -> str:
+async def get_recent_mathematical_computation_history() -> str:
     history = mathematical_calculation_history.get_recent(20)
     if not history:
         return "No calculation history available"
@@ -2265,7 +2265,7 @@ async def get_recent_history() -> str:
 
 
 @mcp.resource("functions://available")
-async def get_available_functions() -> str:
+async def get_available_mathematical_functions_catalog() -> str:
     lines = ["Available Mathematical Functions:"]
 
     lines.append("\\nTrigonometric:")
@@ -2316,7 +2316,7 @@ async def get_available_functions() -> str:
 
 
 @mcp.resource("constants://math")
-async def get_math_constants() -> str:
+async def get_comprehensive_mathematical_constants_catalog() -> str:
     lines = ["Mathematical Constants:"]
     for name, value in MATH_CONSTANTS.items():
         lines.append(f"  {name} = {value}")
