@@ -1,10 +1,8 @@
 import ast
 import cmath
 import datetime
-import logging
 import math
 import operator
-import queue
 import re
 import resource
 import statistics
@@ -13,10 +11,10 @@ import time
 from collections import OrderedDict, deque
 from contextlib import contextmanager
 from dataclasses import dataclass, field
-from threading import RLock, Timer
+from threading import RLock
 from typing import Any
 
-from mcp.server import FastMCP
+from fastmcp import FastMCP
 
 MAXIMUM_MATHEMATICAL_EXPRESSION_CHARACTER_LIMIT = 1000
 MAXIMUM_AST_NODE_DEPTH_LIMIT = 10
@@ -65,41 +63,6 @@ SESSION_CLEANUP_INTERVAL = 600
 
 _memory_cleanup_timer = None
 
-mathematical_computation_logger = logging.getLogger(__name__)
-mathematical_security_logger = logging.getLogger(f"{__name__}.security")
-mathematical_security_logger.setLevel(logging.INFO)
-
-
-class AsynchronousLoggingManager:
-    def __init__(self, base_logger):
-        self.queue = queue.Queue()
-        self.logger = base_logger
-        self.worker = None
-        self.started = False
-
-    def _ensure_started(self):
-        if not self.started:
-            self.started = True
-            self.worker = threading.Thread(target=self._process_logs, daemon=True)
-            self.worker.start()
-
-    def log(self, level, message):
-        if not self.started:
-            self.logger.log(level, message)
-            return
-        self.queue.put((level, message, time.time()))
-
-    def _process_logs(self):
-        while True:
-            try:
-                level, message, timestamp = self.queue.get(timeout=0.1)
-                self.logger.log(level, f"[{timestamp:.3f}] {message}")
-            except queue.Empty:
-                continue
-
-
-async_mathematical_logger = AsynchronousLoggingManager(mathematical_computation_logger)
-async_mathematical_security_logger = AsynchronousLoggingManager(mathematical_security_logger)
 
 
 class LeastRecentlyUsedCache:
@@ -187,16 +150,13 @@ class UserSessionStateManager:
         self.sessions = OrderedDict()
         self.session_timestamps = {}
         self.lock = RLock()
-        self.cleanup_timer = None
         self.started = False
 
     def _ensure_started(self):
         if not self.started:
             self.started = True
-            self._start_cleanup_timer()
 
     def create_session(self, session_id: str, variables: dict[str, float | complex] = None) -> None:
-        self._ensure_started()
         with self.lock:
             current_time = time.time()
             if len(self.sessions) >= self.max_sessions:
@@ -249,20 +209,8 @@ class UserSessionStateManager:
                 del self.session_timestamps[session_id]
             return len(expired_sessions)
 
-    def _start_cleanup_timer(self) -> None:
-        def cleanup_task():
-            try:
-                self.cleanup_expired()
-            finally:
-                self._start_cleanup_timer()
-
-        self.cleanup_timer = Timer(SESSION_CLEANUP_INTERVAL, cleanup_task)
-        self.cleanup_timer.daemon = True
-        self.cleanup_timer.start()
-
     def shutdown(self) -> None:
-        if self.cleanup_timer:
-            self.cleanup_timer.cancel()
+        pass
 
     def get_stats(self) -> dict[str, Any]:
         with self.lock:
@@ -273,10 +221,34 @@ class UserSessionStateManager:
             }
 
 
-_expression_cache = TimeToLiveExpirationCache(MAX_CACHE_SIZE, CACHE_TTL)
-_parsed_expression_ast_cache = LeastRecentlyUsedCache(MAX_CACHE_SIZE)
-_computation_stats = LeastRecentlyUsedCache(MAX_COMPUTATION_STATS)
-_session_manager = UserSessionStateManager()
+_expression_cache = None
+_parsed_expression_ast_cache = None
+_computation_stats = None
+_session_manager = None
+
+def _get_expression_cache():
+    global _expression_cache
+    if _expression_cache is None:
+        _expression_cache = TimeToLiveExpirationCache(MAX_CACHE_SIZE, CACHE_TTL)
+    return _expression_cache
+
+def _get_parsed_cache():
+    global _parsed_expression_ast_cache
+    if _parsed_expression_ast_cache is None:
+        _parsed_expression_ast_cache = LeastRecentlyUsedCache(MAX_CACHE_SIZE)
+    return _parsed_expression_ast_cache
+
+def _get_computation_stats():
+    global _computation_stats
+    if _computation_stats is None:
+        _computation_stats = LeastRecentlyUsedCache(MAX_COMPUTATION_STATS)
+    return _computation_stats
+
+def _get_session_manager():
+    global _session_manager
+    if _session_manager is None:
+        _session_manager = UserSessionStateManager()
+    return _session_manager
 
 
 @dataclass
@@ -353,12 +325,13 @@ mathematical_computation_rate_limiter = ClientRequestRateLimiter(
 
 @contextmanager
 def mathematical_computation_timeout(seconds: float):
+    from threading import Timer
     timeout_occurred = threading.Event()
 
     def timeout_callback():
         timeout_occurred.set()
 
-    timer = threading.Timer(seconds, timeout_callback)
+    timer = Timer(seconds, timeout_callback)
     timer.start()
 
     try:
@@ -875,19 +848,12 @@ class MathematicalCalculationHistory:
             if len(self.history) > self.max_size:
                 self.history.pop(0)
 
-            if SECURITY_AUDIT_LOGGING_ENABLED:
-                async_mathematical_logger.log(
-                    logging.INFO, f"Added calculation: {expression} = {result}"
-                )
-
     def get_recent(self, limit: int = 10) -> list[dict[str, Any]]:
         with self.lock:
             return self.history[-limit:]
 
     def clear(self) -> None:
         with self.lock:
-            if SECURITY_AUDIT_LOGGING_ENABLED:
-                async_mathematical_logger.log(logging.INFO, "Calculation history cleared")
             self.history.clear()
 
 
@@ -902,25 +868,18 @@ def validate_expression_security_constraints(expression: str, client_id: str = "
     if ENABLE_RATE_LIMITING and not mathematical_computation_rate_limiter.check_rate_limit(
         client_id
     ):
-        async_mathematical_security_logger.log(
-            logging.WARNING, f"Rate limit exceeded for client: {client_id}"
-        )
         raise PermissionError(
             f"Rate limit exceeded: {MAXIMUM_CLIENT_REQUESTS_PER_TIME_WINDOW} requests per {RATE_LIMIT_WINDOW} seconds"
         )
 
     for pattern in FORBIDDEN_PATTERNS:
         if re.search(pattern, expression, re.IGNORECASE):
-            async_mathematical_security_logger.log(
-                logging.ERROR, f"Forbidden pattern detected: {pattern}"
-            )
             raise ValueError("Expression contains forbidden pattern")
 
     suspicious_chars = ["\\x00", "\\n", "\\r", "\\b", "\\f", "\\v"]
     filtered_expr = "".join(ch for ch in expression if ch not in suspicious_chars)
 
     if len(filtered_expr) != len(expression):
-        async_mathematical_security_logger.log(logging.ERROR, "Control characters detected")
         raise ValueError("Expression contains invalid control characters")
 
     return True
@@ -933,7 +892,7 @@ def track_mathematical_operation_performance(
         computation_time = end_time - start_time
         expression_hash = compute_expression_fingerprint(expression)
 
-        existing_stats = _computation_stats.get(expression_hash)
+        existing_stats = _get_computation_stats().get(expression_hash)
         if existing_stats is None:
             stats = {
                 "count": 1,
@@ -949,12 +908,7 @@ def track_mathematical_operation_performance(
             stats["max_time"] = max(stats["max_time"], computation_time)
             stats["last_seen"] = end_time
 
-        _computation_stats.set(expression_hash, stats)
-
-        if computation_time > MAXIMUM_COMPUTATION_DURATION_SECONDS:
-            async_mathematical_security_logger.log(
-                logging.WARNING, f"Slow computation: {computation_time:.3f}s for {expression_hash}"
-            )
+        _get_computation_stats().set(expression_hash, stats)
 
 
 def cleanup_expired_cache_entries() -> dict[str, int]:
@@ -964,30 +918,13 @@ def cleanup_expired_cache_entries() -> dict[str, int]:
         "rate_limiter_expired": 0,
     }
 
-    cleanup_stats["expression_cache_expired"] = _expression_cache.cleanup_expired()
-    cleanup_stats["sessions_expired"] = _session_manager.cleanup_expired()
+    cleanup_stats["expression_cache_expired"] = _get_expression_cache().cleanup_expired()
+    cleanup_stats["sessions_expired"] = _get_session_manager().cleanup_expired()
     cleanup_stats["rate_limiter_expired"] = mathematical_computation_rate_limiter.cleanup_expired()
 
     return cleanup_stats
 
 
-def start_memory_cleanup_timer() -> None:
-    global _memory_cleanup_timer
-
-    def memory_cleanup_task():
-        try:
-            cleanup_stats = cleanup_expired_cache_entries()
-            total_cleaned = sum(cleanup_stats.values())
-            if total_cleaned > 0:
-                async_mathematical_logger.log(logging.INFO, f"Memory cleanup: {cleanup_stats}")
-        except Exception as e:
-            async_mathematical_logger.log(logging.ERROR, f"Memory cleanup error: {e}")
-        finally:
-            start_memory_cleanup_timer()
-
-    _memory_cleanup_timer = Timer(SESSION_CLEANUP_INTERVAL, memory_cleanup_task)
-    _memory_cleanup_timer.daemon = True
-    _memory_cleanup_timer.start()
 
 
 def get_memory_usage_stats() -> dict[str, Any]:
@@ -1001,10 +938,10 @@ def get_memory_usage_stats() -> dict[str, Any]:
     return {
         "process_memory_mb": round(memory_info.rss / 1024 / 1024, 2),
         "virtual_memory_mb": round(memory_info.vms / 1024 / 1024, 2),
-        "expression_cache_size": _expression_cache.size(),
-        "ast_cache_size": _parsed_expression_ast_cache.size(),
-        "computation_stats_size": _computation_stats.size(),
-        "active_sessions": _session_manager.get_stats()["active_sessions"],
+        "expression_cache_size": _get_expression_cache().size(),
+        "ast_cache_size": _get_parsed_cache().size(),
+        "computation_stats_size": _get_computation_stats().size(),
+        "active_sessions": _get_session_manager().get_stats()["active_sessions"],
         "rate_limiter_clients": len(mathematical_computation_rate_limiter.requests),
         "history_entries": len(mathematical_calculation_history.history),
     }
@@ -1014,23 +951,23 @@ def shutdown_memory_management() -> None:
     global _memory_cleanup_timer
     if _memory_cleanup_timer:
         _memory_cleanup_timer.cancel()
-    _session_manager.shutdown()
+    _get_session_manager().shutdown()
 
 
 def retrieve_cached_computation_result(expression: str) -> str | None:
-    return _expression_cache.get(expression)
+    return _get_expression_cache().get(expression)
 
 
 def persist_computation_result_in_cache(expression: str, result: str) -> None:
-    _expression_cache.set(expression, result)
+    _get_expression_cache().set(expression, result)
 
 
 def retrieve_cached_abstract_syntax_tree(expression: str) -> ast.AST | None:
-    return _parsed_expression_ast_cache.get(expression)
+    return _get_parsed_cache().get(expression)
 
 
 def store_parsed_expression(expression: str, tree: ast.AST) -> None:
-    _parsed_expression_ast_cache.set(expression, tree)
+    _get_parsed_cache().set(expression, tree)
 
 
 def sanitize_expression(expr: str) -> str:
@@ -1197,7 +1134,7 @@ def compute_expression(
 
         session_vars = {}
         if session_id:
-            session_vars = _session_manager.get_session(session_id) or {}
+            session_vars = _get_session_manager().get_session(session_id) or {}
 
         cached_result = retrieve_cached_computation_result(original_expression)
         if cached_result is not None:
@@ -1723,23 +1660,6 @@ _shutdown_requested = False
 _active_mathematical_computations = 0
 
 
-def setup_graceful_shutdown():
-    global _shutdown_requested
-
-    def shutdown_handler(signum, frame):
-        del frame
-        _shutdown_requested = True
-        async_mathematical_logger.log(
-            logging.INFO, f"Received shutdown signal {signum}, initiating graceful shutdown"
-        )
-
-    import signal
-
-    try:
-        signal.signal(signal.SIGTERM, shutdown_handler)
-        signal.signal(signal.SIGINT, shutdown_handler)
-    except (OSError, ValueError):
-        pass
 
 
 mcp = FastMCP("MCP Math")
@@ -1752,14 +1672,14 @@ async def get_system_metrics() -> str:
 
     with _computation_metrics_lock:
         stats_values = []
-        for i in range(_computation_stats.size()):
+        for i in range(_get_computation_stats().size()):
             key = (
-                list(_computation_stats.cache.keys())[i]
-                if i < len(_computation_stats.cache)
+                list(_get_computation_stats().cache.keys())[i]
+                if i < len(_get_computation_stats().cache)
                 else None
             )
             if key:
-                stat = _computation_stats.get(key)
+                stat = _get_computation_stats().get(key)
                 if stat:
                     stats_values.append(stat)
 
@@ -1783,12 +1703,12 @@ async def get_system_metrics() -> str:
     history_size = len(mathematical_calculation_history.history)
     metrics.append(f"History Entries: {history_size}/{CALCULATION_HISTORY_ENTRY_LIMIT}")
 
-    cache_size = _expression_cache.size()
-    ast_cache_size = _parsed_expression_ast_cache.size()
+    cache_size = _get_expression_cache().size()
+    ast_cache_size = _get_parsed_cache().size()
     metrics.append(f"Expression Cache: {cache_size}/{MAX_CACHE_SIZE}")
     metrics.append(f"AST Cache: {ast_cache_size}/{MAX_CACHE_SIZE}")
 
-    session_stats = _session_manager.get_stats()
+    session_stats = _get_session_manager().get_stats()
     metrics.append(
         f"Active Sessions: {session_stats['active_sessions']}/{session_stats['max_sessions']}"
     )
@@ -1991,7 +1911,7 @@ async def create_session(
         if not session_id:
             session_id = f"session_{int(time.time() * 1000)}"
 
-        _session_manager.create_session(session_id, variables)
+        _get_session_manager().create_session(session_id, variables)
         return f"Session created: {session_id}"
     except Exception as e:
         return f"Error: {str(e)}"
@@ -2010,7 +1930,7 @@ async def calculate_in_session(session_id: str, expression: str, save_as: str | 
         result = compute_expression(expression, session_id)
 
         if result.success and save_as:
-            _session_manager.update_session(session_id, save_as, result.result)
+            _get_session_manager().update_session(session_id, save_as, result.result)
 
         return result.to_string()
     except Exception as e:
@@ -2021,7 +1941,7 @@ async def calculate_in_session(session_id: str, expression: str, save_as: str | 
 
 @mcp.tool()
 async def list_session_variables(session_id: str) -> str:
-    variables = _session_manager.get_session(session_id)
+    variables = _get_session_manager().get_session(session_id)
     if variables is None:
         return f"Error: Session {session_id} not found"
 
@@ -2037,7 +1957,7 @@ async def list_session_variables(session_id: str) -> str:
 
 @mcp.tool()
 async def delete_session(session_id: str) -> str:
-    if _session_manager.delete_session(session_id):
+    if _get_session_manager().delete_session(session_id):
         return f"Session {session_id} deleted"
     return f"Session {session_id} not found"
 
@@ -2214,27 +2134,7 @@ Example: ["2 + 2", "sin(pi/2)", "sqrt(16) * cos(0)", "factorial(5)", "log10(1000
 What expressions would you like to calculate?"""
 
 
-def _log_startup_info():
-    """Log startup information."""
-    if SECURITY_AUDIT_LOGGING_ENABLED:
-        async_mathematical_logger.log(
-            logging.INFO, "Starting Enhanced MCP Math server with memory management"
-        )
-        async_mathematical_logger.log(logging.INFO, f"Available functions: {len(ALL_FUNCTIONS)}")
-        async_mathematical_logger.log(
-            logging.INFO,
-            f"Security: timeout={MATHEMATICAL_OPERATION_TIMEOUT_SECONDS}s, memory={MAXIMUM_MEMORY_USAGE_MEGABYTES}MB",
-        )
-        async_mathematical_logger.log(
-            logging.INFO,
-            f"Memory: max_cache={MAX_CACHE_SIZE}, max_sessions={MAX_SESSIONS}, cleanup_interval={SESSION_CLEANUP_INTERVAL}s",
-        )
-
-
 if __name__ == "__main__":
-    async_mathematical_logger._ensure_started()
-    _session_manager._ensure_started()
-    setup_graceful_shutdown()
-    start_memory_cleanup_timer()
-    _log_startup_info()
     mcp.run()
+
+
