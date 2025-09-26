@@ -12,7 +12,7 @@ from collections import OrderedDict, deque
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from threading import RLock
-from typing import Any
+from typing import Annotated, Any
 
 from fastmcp import FastMCP
 
@@ -1667,6 +1667,7 @@ mcp = FastMCP("MCP Math")
 
 @mcp.tool()
 async def get_system_metrics() -> str:
+    """Get comprehensive system performance metrics including computation stats and uptime."""
     metrics = ["MCP Math System Metrics:"]
     metrics.append("=" * 40)
 
@@ -1731,6 +1732,7 @@ async def get_system_metrics() -> str:
 
 @mcp.tool()
 async def get_security_status() -> str:
+    """Get current security status including rate limiting and session information."""
     security_info = ["MCP Math Security Status:"]
     security_info.append("=" * 35)
 
@@ -1768,6 +1770,7 @@ async def get_security_status() -> str:
 
 @mcp.tool()
 async def get_memory_usage() -> str:
+    """Get detailed memory usage statistics for cache and session management."""
     try:
         stats = get_memory_usage_stats()
         lines = ["MCP Math Memory Usage:"]
@@ -1796,6 +1799,7 @@ async def get_memory_usage() -> str:
 
 @mcp.tool()
 async def calculate(expression: str) -> str:
+    """Evaluate a mathematical expression and return the result with automatic history tracking."""
     global _active_mathematical_computations
 
     if _shutdown_requested:
@@ -1814,6 +1818,7 @@ async def calculate(expression: str) -> str:
 
 @mcp.tool()
 async def batch_calculate(expressions: list[str]) -> str:
+    """Process multiple mathematical expressions in a single batch operation."""
     results = []
     for expr in expressions:
         result = compute_expression(expr)
@@ -1825,7 +1830,8 @@ async def batch_calculate(expressions: list[str]) -> str:
 
 
 @mcp.tool()
-async def statistics(data: list[float], operation: str) -> str:
+async def calculate_statistics(data: list[float], operation: str) -> str:
+    """Calculate statistical measures for a dataset including mean, median, mode, variance, and std_dev."""
     try:
         if operation not in STATISTICS_FUNCTIONS:
             return f"Error: Unknown operation {operation}"
@@ -1842,6 +1848,7 @@ async def statistics(data: list[float], operation: str) -> str:
 
 @mcp.tool()
 async def matrix_operation(matrices: list[list[list[float]]], operation: str) -> str:
+    """Perform matrix operations including multiply, transpose, determinant, and inverse."""
     try:
         if operation == "multiply":
             if len(matrices) != 2:
@@ -1870,6 +1877,7 @@ async def matrix_operation(matrices: list[list[list[float]]], operation: str) ->
 
 @mcp.tool()
 async def convert_units(value: float, from_unit: str, to_unit: str, unit_type: str) -> str:
+    """Convert between different units of measurement across 158 supported unit conversions."""
     try:
         result = convert_unit(value, from_unit, to_unit, unit_type)
         return f"Result: {value} {from_unit} = {result} {to_unit}"
@@ -1878,7 +1886,8 @@ async def convert_units(value: float, from_unit: str, to_unit: str, unit_type: s
 
 
 @mcp.tool()
-async def number_theory(n: int, operation: str) -> str:
+async def analyze_number_theory(n: int, operation: str) -> str:
+    """Analyze number theory properties including primality, factors, GCD, LCM, and Fibonacci."""
     try:
         if operation == "is_prime":
             result = is_prime(n)
@@ -1907,6 +1916,7 @@ async def number_theory(n: int, operation: str) -> str:
 async def create_session(
     session_id: str | None = None, variables: dict[str, float] | None = None
 ) -> str:
+    """Create a new calculation session with optional initial variables for stateful computations."""
     try:
         if not session_id:
             session_id = f"session_{int(time.time() * 1000)}"
@@ -1919,6 +1929,7 @@ async def create_session(
 
 @mcp.tool()
 async def calculate_in_session(session_id: str, expression: str, save_as: str | None = None) -> str:
+    """Execute calculations within a session context with variable storage and retrieval."""
     global _active_mathematical_computations
 
     if _shutdown_requested:
@@ -1941,6 +1952,7 @@ async def calculate_in_session(session_id: str, expression: str, save_as: str | 
 
 @mcp.tool()
 async def list_session_variables(session_id: str) -> str:
+    """List all variables stored in a specific calculation session."""
     variables = _get_session_manager().get_session(session_id)
     if variables is None:
         return f"Error: Session {session_id} not found"
@@ -1957,6 +1969,7 @@ async def list_session_variables(session_id: str) -> str:
 
 @mcp.tool()
 async def delete_session(session_id: str) -> str:
+    """Delete a calculation session and free associated resources."""
     if _get_session_manager().delete_session(session_id):
         return f"Session {session_id} deleted"
     return f"Session {session_id} not found"
@@ -1964,6 +1977,7 @@ async def delete_session(session_id: str) -> str:
 
 @mcp.tool()
 async def get_calculation_history(limit: int = 10) -> str:
+    """Retrieve recent calculation history with expressions and results."""
     if limit > CALCULATION_HISTORY_ENTRY_LIMIT:
         limit = CALCULATION_HISTORY_ENTRY_LIMIT
 
@@ -1979,12 +1993,14 @@ async def get_calculation_history(limit: int = 10) -> str:
 
 @mcp.tool()
 async def clear_history() -> str:
+    """Clear all stored calculation history entries."""
     mathematical_calculation_history.clear()
     return "Calculation history cleared successfully"
 
 
 @mcp.tool()
 async def cleanup_memory() -> str:
+    """Clean up expired cache entries and optimize memory usage."""
     try:
         cleanup_stats = cleanup_expired_cache_entries()
         lines = ["Memory Cleanup Results:"]
@@ -2000,6 +2016,7 @@ async def cleanup_memory() -> str:
 
 @mcp.tool()
 async def list_functions() -> str:
+    """List all available mathematical functions, constants, and supported operations."""
     lines = ["Available Mathematical Functions and Constants:"]
 
     lines.append("\\nBasic Math Functions:")
@@ -2102,34 +2119,59 @@ async def get_math_constants() -> str:
 
 
 @mcp.prompt()
-async def scientific_calculation() -> str:
-    return """I need help with scientific calculations. Here are some examples:
+async def scientific_calculation(
+    expression_type: Annotated[str, "Type of calculation: general, trigonometric, logarithmic, statistical"] = "general",
+    precision: Annotated[int, "Decimal precision for results"] = 6,
+    include_steps: Annotated[bool, "Include step-by-step solution"] = False
+) -> str:
+    """Generates a customized scientific calculation prompt."""
+    prompts = {
+        "general": f"Calculate the following expression with {precision} decimal places",
+        "trigonometric": f"Solve this trigonometric problem with {precision} precision",
+        "logarithmic": f"Compute this logarithmic expression to {precision} decimals",
+        "statistical": f"Perform statistical analysis with {precision} decimal accuracy"
+    }
 
-Basic Operations:
-- Addition: 2 + 3
-- Subtraction: 10 - 4
-- Multiplication: 5 * 6 or 5 × 6
-- Division: 15 / 3 or 15 ÷ 3
-- Power: 2 ** 3 or 2 ^ 3
+    base_prompt = prompts.get(expression_type, prompts["general"])
 
-Scientific Functions:
-- Trigonometry: sin(pi/2), cos(0), tan(pi/4)
-- Logarithms: log(10), log10(100), log2(8)
-- Square root: sqrt(16)
-- Exponential: exp(1)
+    if include_steps:
+        base_prompt += " and show detailed step-by-step solution"
 
-Statistics:
-- mean([1,2,3,4,5])
-- stdev([1,2,3,4,5])
+    base_prompt += ".\n\nExamples:"
 
-What calculation would you like me to perform?"""
+    if expression_type == "trigonometric":
+        base_prompt += "\n- sin(pi/2), cos(0), tan(pi/4)\n- asin(0.5), acos(0.5), atan(1)"
+    elif expression_type == "logarithmic":
+        base_prompt += "\n- log(10), log10(100), log2(8)\n- exp(1), exp(2)"
+    elif expression_type == "statistical":
+        base_prompt += "\n- mean([1,2,3,4,5])\n- stdev([1,2,3,4,5])\n- variance([1,2,3,4,5])"
+    else:
+        base_prompt += "\n- Addition: 2 + 3\n- Subtraction: 10 - 4\n- Multiplication: 5 * 6\n- Division: 15 / 3\n- Power: 2 ** 3"
+
+    return base_prompt + "\n\nWhat calculation would you like me to perform?"
 
 
 @mcp.prompt()
-async def batch_calculation() -> str:
-    return """I need to process multiple calculations at once.
+async def batch_calculation(
+    batch_size: Annotated[int, "Number of calculations to process"] = 5,
+    operation_types: Annotated[list[str], "Types of operations to include"] = None,
+    complexity: Annotated[str, "Complexity level: simple, medium, advanced"] = "medium"
+) -> str:
+    """Generates a batch calculation prompt with specified parameters."""
+    if operation_types is None:
+        operation_types = ["arithmetic", "trigonometric"]
 
-Example: ["2 + 2", "sin(pi/2)", "sqrt(16) * cos(0)", "factorial(5)", "log10(1000)"]
+    examples = {
+        "simple": ["2 + 2", "10 - 4", "5 * 6", "15 / 3", "2 ** 3"],
+        "medium": ["2 + 2", "sin(pi/2)", "sqrt(16) * cos(0)", "factorial(5)", "log10(1000)"],
+        "advanced": ["factorial(20) / factorial(15)", "log2(256) ** sqrt(16)", "mean([1,2,3,4,5]) * stdev([1,2,3,4,5])", "gcd(48, 18) * lcm(12, 15)", "exp(log(10)) + sinh(0)"]
+    }
+
+    example_list = examples.get(complexity, examples["medium"])[:batch_size]
+
+    return f"""Process {batch_size} calculations including {', '.join(operation_types)} operations at {complexity} complexity level.
+
+Examples: {example_list}
 
 What expressions would you like to calculate?"""
 
