@@ -18,15 +18,15 @@ from fastmcp import FastMCP, Context
 
 @dataclass
 class MatrixOperationChoice:
-    operation: str
+    matrix_operation_type: str
 
 @dataclass
 class NumberTheoryOperationChoice:
-    operation: str
+    number_theory_operation_type: str
 
 @dataclass
 class StatisticsOperationChoice:
-    operation: str
+    statistical_operation_type: str
 
 MAXIMUM_MATHEMATICAL_EXPRESSION_CHARACTER_LIMIT = 1000
 MAXIMUM_AST_NODE_DEPTH_LIMIT = 10
@@ -66,19 +66,19 @@ _calculation_history_lock = RLock()
 _session_variables_lock = RLock()
 _rate_limiting_lock = RLock()
 
-CACHE_TTL = 300
-MAX_CACHE_SIZE = 1000
-MAX_SESSION_TTL = 3600
-MAX_SESSIONS = 100
-MAX_COMPUTATION_STATS = 500
+CACHE_TIME_TO_LIVE_SECONDS = 300
+MAXIMUM_CACHE_SIZE = 1000
+MAXIMUM_SESSION_TIME_TO_LIVE_SECONDS = 3600
+MAXIMUM_SESSIONS = 100
+MAXIMUM_COMPUTATION_STATISTICS = 500
 SESSION_CLEANUP_INTERVAL = 600
 
 _memory_cleanup_timer = None
 
 
 
-class LeastRecentlyUsedCache:
-    def __init__(self, max_size: int = MAX_CACHE_SIZE):
+class LRUExpressionCache:
+    def __init__(self, max_size: int = MAXIMUM_CACHE_SIZE):
         self.max_size = max_size
         self.cache = OrderedDict()
         self.lock = RLock()
@@ -107,10 +107,10 @@ class LeastRecentlyUsedCache:
             return len(self.cache)
 
 
-class TimeToLiveExpirationCache:
-    def __init__(self, max_size: int = MAX_CACHE_SIZE, ttl: float = CACHE_TTL):
+class TTLResultCache:
+    def __init__(self, max_size: int = MAXIMUM_CACHE_SIZE, time_to_live: float = CACHE_TIME_TO_LIVE_SECONDS):
         self.max_size = max_size
-        self.ttl = ttl
+        self.time_to_live = time_to_live
         self.cache = OrderedDict()
         self.lock = RLock()
 
@@ -119,7 +119,7 @@ class TimeToLiveExpirationCache:
             if key not in self.cache:
                 return None
             value, timestamp = self.cache[key]
-            if time.time() - timestamp > self.ttl:
+            if time.time() - timestamp > self.time_to_live:
                 del self.cache[key]
                 return None
             self.cache.move_to_end(key)
@@ -140,7 +140,7 @@ class TimeToLiveExpirationCache:
             expired_keys = [
                 key
                 for key, (_, timestamp) in self.cache.items()
-                if current_time - timestamp > self.ttl
+                if current_time - timestamp > self.time_to_live
             ]
             for key in expired_keys:
                 del self.cache[key]
@@ -155,10 +155,10 @@ class TimeToLiveExpirationCache:
             return len(self.cache)
 
 
-class UserSessionStateManager:
-    def __init__(self, max_sessions: int = MAX_SESSIONS, session_ttl: float = MAX_SESSION_TTL):
+class CalculationSessionManager:
+    def __init__(self, max_sessions: int = MAXIMUM_SESSIONS, session_time_to_live: float = MAXIMUM_SESSION_TIME_TO_LIVE_SECONDS):
         self.max_sessions = max_sessions
-        self.session_ttl = session_ttl
+        self.session_time_to_live = session_time_to_live
         self.sessions = OrderedDict()
         self.session_timestamps = {}
         self.lock = RLock()
@@ -184,7 +184,7 @@ class UserSessionStateManager:
             if session_id not in self.sessions:
                 return None
             current_time = time.time()
-            if current_time - self.session_timestamps[session_id] > self.session_ttl:
+            if current_time - self.session_timestamps[session_id] > self.session_time_to_live:
                 del self.sessions[session_id]
                 del self.session_timestamps[session_id]
                 return None
@@ -214,7 +214,7 @@ class UserSessionStateManager:
             expired_sessions = [
                 session_id
                 for session_id, timestamp in self.session_timestamps.items()
-                if current_time - timestamp > self.session_ttl
+                if current_time - timestamp > self.session_time_to_live
             ]
             for session_id in expired_sessions:
                 del self.sessions[session_id]
@@ -229,7 +229,7 @@ class UserSessionStateManager:
             return {
                 "active_sessions": len(self.sessions),
                 "max_sessions": self.max_sessions,
-                "session_ttl": self.session_ttl,
+                "session_time_to_live": self.session_time_to_live,
             }
 
 
@@ -241,30 +241,30 @@ _session_manager = None
 def _get_expression_cache():
     global _expression_cache
     if _expression_cache is None:
-        _expression_cache = TimeToLiveExpirationCache(MAX_CACHE_SIZE, CACHE_TTL)
+        _expression_cache = TTLResultCache(MAXIMUM_CACHE_SIZE, CACHE_TIME_TO_LIVE_SECONDS)
     return _expression_cache
 
 def _get_parsed_cache():
     global _parsed_expression_ast_cache
     if _parsed_expression_ast_cache is None:
-        _parsed_expression_ast_cache = LeastRecentlyUsedCache(MAX_CACHE_SIZE)
+        _parsed_expression_ast_cache = LRUExpressionCache(MAXIMUM_CACHE_SIZE)
     return _parsed_expression_ast_cache
 
 def _get_computation_stats():
     global _computation_stats
     if _computation_stats is None:
-        _computation_stats = LeastRecentlyUsedCache(MAX_COMPUTATION_STATS)
+        _computation_stats = LRUExpressionCache(MAXIMUM_COMPUTATION_STATISTICS)
     return _computation_stats
 
 def _get_session_manager():
     global _session_manager
     if _session_manager is None:
-        _session_manager = UserSessionStateManager()
+        _session_manager = CalculationSessionManager()
     return _session_manager
 
 
 @dataclass
-class MathematicalComputationResult:
+class ExpressionEvaluationResult:
     success: bool
     expression: str
     result: float | complex | bool | tuple | list | None = None
@@ -287,7 +287,7 @@ class MathematicalComputationResult:
             return f"Error: {self.error.get('message', 'Unknown error')}"
 
 
-class ClientRequestRateLimiter:
+class ComputationRateLimiter:
     def __init__(self, max_requests: int, window: int, max_clients: int = 1000):
         self.max_requests = max_requests
         self.window = window
@@ -330,7 +330,7 @@ class ClientRequestRateLimiter:
             return len(expired_clients)
 
 
-mathematical_computation_rate_limiter = ClientRequestRateLimiter(
+mathematical_computation_rate_limiter = ComputationRateLimiter(
     MAXIMUM_CLIENT_REQUESTS_PER_TIME_WINDOW, RATE_LIMIT_WINDOW
 )
 
@@ -1127,7 +1127,7 @@ def evaluate_mathematical_node(node: ast.AST, session_vars: dict | None = None) 
 
 def compute_expression(
     expression: str, session_id: str | None = None
-) -> MathematicalComputationResult:
+) -> ExpressionEvaluationResult:
     start_time = time.time()
 
     try:
@@ -1150,7 +1150,7 @@ def compute_expression(
 
         cached_result = retrieve_cached_computation_result(original_expression)
         if cached_result is not None:
-            return MathematicalComputationResult(
+            return ExpressionEvaluationResult(
                 success=True,
                 expression=original_expression,
                 result=cached_result,
@@ -1216,7 +1216,7 @@ def compute_expression(
         end_time = time.time()
         track_mathematical_operation_performance(original_expression, start_time, end_time)
 
-        return MathematicalComputationResult(
+        return ExpressionEvaluationResult(
             success=True,
             expression=original_expression,
             result=result,
@@ -1231,13 +1231,13 @@ def compute_expression(
         AttributeError,
         TimeoutError,
     ) as e:
-        return MathematicalComputationResult(
+        return ExpressionEvaluationResult(
             success=False,
             expression=expression,
             error={"type": type(e).__name__, "message": str(e)},
         )
     except Exception as e:
-        return MathematicalComputationResult(
+        return ExpressionEvaluationResult(
             success=False,
             expression=expression,
             error={"type": "UnexpectedError", "message": f"Calculation error: {str(e)}"},
@@ -1303,80 +1303,80 @@ def format_calculation_output(result: Any, original_expression: str) -> str:
     return str(result)
 
 
-def matrix_multiply(A: list[list[float]], B: list[list[float]]) -> list[list[float]]:
-    rows_A, cols_A = len(A), len(A[0]) if A else 0
-    rows_B, cols_B = len(B), len(B[0]) if B else 0
+def matrix_multiply(first_matrix: list[list[float]], second_matrix: list[list[float]]) -> list[list[float]]:
+    first_matrix_rows, first_matrix_cols = len(first_matrix), len(first_matrix[0]) if first_matrix else 0
+    second_matrix_rows, second_matrix_cols = len(second_matrix), len(second_matrix[0]) if second_matrix else 0
 
-    if cols_A != rows_B:
-        raise ValueError(f"Cannot multiply matrices: {cols_A} != {rows_B}")
+    if first_matrix_cols != second_matrix_rows:
+        raise ValueError(f"Cannot multiply matrices: {first_matrix_cols} != {second_matrix_rows}")
 
-    result = [[0 for _ in range(cols_B)] for _ in range(rows_A)]
+    result = [[0 for _ in range(second_matrix_cols)] for _ in range(first_matrix_rows)]
 
-    for i in range(rows_A):
-        for j in range(cols_B):
-            for k in range(cols_A):
-                result[i][j] += A[i][k] * B[k][j]
+    for row_index in range(first_matrix_rows):
+        for column_index in range(second_matrix_cols):
+            for inner_index in range(first_matrix_cols):
+                result[row_index][column_index] += first_matrix[row_index][inner_index] * second_matrix[inner_index][column_index]
 
     return result
 
 
 def matrix_determinant(matrix: list[list[float]]) -> float:
-    n = len(matrix)
-    if n == 0 or n != len(matrix[0]):
+    matrix_dimension = len(matrix)
+    if matrix_dimension == 0 or matrix_dimension != len(matrix[0]):
         raise ValueError("Matrix must be square")
 
-    if n == 1:
+    if matrix_dimension == 1:
         return matrix[0][0]
 
-    if n == 2:
+    if matrix_dimension == 2:
         return matrix[0][0] * matrix[1][1] - matrix[0][1] * matrix[1][0]
 
-    det = 0
-    for j in range(n):
-        minor = [row[:j] + row[j + 1 :] for row in matrix[1:]]
-        det += ((-1) ** j) * matrix[0][j] * matrix_determinant(minor)
+    determinant_value = 0
+    for column_index in range(matrix_dimension):
+        minor = [row[:column_index] + row[column_index + 1 :] for row in matrix[1:]]
+        determinant_value += ((-1) ** column_index) * matrix[0][column_index] * matrix_determinant(minor)
 
-    return det
+    return determinant_value
 
 
 def matrix_inverse(matrix: list[list[float]]) -> list[list[float]]:
-    n = len(matrix)
-    det = matrix_determinant(matrix)
+    matrix_size = len(matrix)
+    determinant_value = matrix_determinant(matrix)
 
-    if abs(det) < 1e-10:
+    if abs(determinant_value) < 1e-10:
         raise ValueError("Matrix is singular (determinant equals zero)")
 
-    if n == 2:
+    if matrix_size == 2:
         return [
-            [matrix[1][1] / det, -matrix[0][1] / det],
-            [-matrix[1][0] / det, matrix[0][0] / det],
+            [matrix[1][1] / determinant_value, -matrix[0][1] / determinant_value],
+            [-matrix[1][0] / determinant_value, matrix[0][0] / determinant_value],
         ]
 
     raise ValueError("Matrix inverse is only implemented for 2x2 matrices")
 
 
-def is_prime(n: int) -> bool:
-    if n < 2:
+def is_prime(candidate_number: int) -> bool:
+    if candidate_number < 2:
         return False
-    if n == 2:
+    if candidate_number == 2:
         return True
-    if n % 2 == 0:
+    if candidate_number % 2 == 0:
         return False
 
-    return all(n % i != 0 for i in range(3, int(math.sqrt(n)) + 1, 2))
+    return all(candidate_number % potential_divisor != 0 for potential_divisor in range(3, int(math.sqrt(candidate_number)) + 1, 2))
 
 
-def prime_factors(n: int) -> list[int]:
-    factors = []
-    d = 2
-    while d * d <= n:
-        while n % d == 0:
-            factors.append(d)
-            n //= d
-        d += 1
-    if n > 1:
-        factors.append(n)
-    return factors
+def prime_factors(input_number: int) -> list[int]:
+    factor_list = []
+    trial_divisor = 2
+    while trial_divisor * trial_divisor <= input_number:
+        while input_number % trial_divisor == 0:
+            factor_list.append(trial_divisor)
+            input_number //= trial_divisor
+        trial_divisor += 1
+    if input_number > 1:
+        factor_list.append(input_number)
+    return factor_list
 
 
 def parse_natural_language_conversion(text: str) -> tuple[float, str, str, str] | None:
@@ -1760,8 +1760,8 @@ async def get_system_metrics() -> str:
 
     cache_size = _get_expression_cache().size()
     ast_cache_size = _get_parsed_cache().size()
-    metrics.append(f"Expression Cache: {cache_size}/{MAX_CACHE_SIZE}")
-    metrics.append(f"AST Cache: {ast_cache_size}/{MAX_CACHE_SIZE}")
+    metrics.append(f"Expression Cache: {cache_size}/{MAXIMUM_CACHE_SIZE}")
+    metrics.append(f"AST Cache: {ast_cache_size}/{MAXIMUM_CACHE_SIZE}")
 
     session_stats = _get_session_manager().get_stats()
     metrics.append(
@@ -1832,13 +1832,13 @@ async def get_memory_usage() -> str:
         lines.append(f"Process Memory: {stats['process_memory_mb']} MB")
         lines.append(f"Virtual Memory: {stats['virtual_memory_mb']} MB")
         lines.append("\\nCache Usage:")
-        lines.append(f"  Expression Cache: {stats['expression_cache_size']}/{MAX_CACHE_SIZE}")
-        lines.append(f"  AST Cache: {stats['ast_cache_size']}/{MAX_CACHE_SIZE}")
+        lines.append(f"  Expression Cache: {stats['expression_cache_size']}/{MAXIMUM_CACHE_SIZE}")
+        lines.append(f"  AST Cache: {stats['ast_cache_size']}/{MAXIMUM_CACHE_SIZE}")
         lines.append(
-            f"  Computation Stats: {stats['computation_stats_size']}/{MAX_COMPUTATION_STATS}"
+            f"  Computation Stats: {stats['computation_stats_size']}/{MAXIMUM_COMPUTATION_STATISTICS}"
         )
         lines.append("\\nSession Management:")
-        lines.append(f"  Active Sessions: {stats['active_sessions']}/{MAX_SESSIONS}")
+        lines.append(f"  Active Sessions: {stats['active_sessions']}/{MAXIMUM_SESSIONS}")
         lines.append("\\nOther Components:")
         lines.append(f"  Rate Limiter Clients: {stats['rate_limiter_clients']}")
         lines.append(
@@ -1899,7 +1899,7 @@ async def calculate_statistics(data: list[float], operation: str, ctx: Context) 
             )
 
             if elicit_result.action == "accept":
-                operation = elicit_result.data.operation
+                operation = elicit_result.data.statistical_operation_type
                 if operation not in STATISTICS_FUNCTIONS:
                     valid_ops = ", ".join(sorted(STATISTICS_FUNCTIONS.keys()))
                     return f"Error: Invalid operation selection '{operation}'. Valid options are: {valid_ops}"
@@ -1954,7 +1954,7 @@ async def matrix_operation(matrices: list[list[list[float]]], operation: str, ct
             )
 
             if elicit_result.action == "accept":
-                operation = elicit_result.data.operation
+                operation = elicit_result.data.matrix_operation_type
                 if operation == "multiply":
                     if len(matrices) != 2:
                         return "Error: Matrix multiplication requires exactly 2 matrices"
@@ -2087,7 +2087,7 @@ async def analyze_number_theory(n: int, operation: str, ctx: Context) -> str:
             )
 
             if elicit_result.action == "accept":
-                operation = elicit_result.data.operation
+                operation = elicit_result.data.number_theory_operation_type
                 if operation == "is_prime":
                     await ctx.report_progress(progress=50, total=100)
                     result = is_prime(n)
