@@ -139,13 +139,73 @@ If you're using VS Code with the Continue extension:
 }
 ```
 
+### FastMCP Cloud Configuration
+
+MCP Mathematics is available as a cloud-hosted service through FastMCP for instant access without local installation. Choose from multiple connection methods:
+
+#### Connect to Claude Code
+
+Access your tools from the command line with quick setup:
+
+```bash
+claude mcp add --scope local --transport http mathematics https://mathematics.fastmcp.app/mcp
+```
+
+#### Connect to Claude Desktop
+
+Use your tools directly in Claude's desktop app with one-click installation:
+
+**Download Link:** [https://mathematics.fastmcp.app/manifest.dxt?v=aa76634e-bffb-4be5-b1fd-c680cd7f7142](https://mathematics.fastmcp.app/manifest.dxt?v=aa76634e-bffb-4be5-b1fd-c680cd7f7142)
+
+*Downloads .dxt file. Open the file to connect automatically.*
+
+#### Connect to Codex CLI
+
+Access your tools in a Codex CLI session:
+
+```bash
+codex mcp add -- mathematics npx -y mcp-remote@latest https://mathematics.fastmcp.app/mcp
+```
+
+#### Configure Codex
+
+Durably store your MCP via Codex's configuration file by adding this to `.codex/config.toml`:
+
+```toml
+[mcp_servers.mathematics]
+command = "npx"
+args = ["-y", "mcp-remote@latest", "https://mathematics.fastmcp.app/mcp"]
+```
+
+#### Connect to Gemini CLI
+
+Access your tools from the command line with quick setup:
+
+```bash
+gemini mcp add mathematics https://mathematics.fastmcp.app/mcp --transport http
+```
+
+#### Connect to Cursor
+
+AI-powered code editor with built-in tool support. Click to connect instantly:
+
+**Connection Link:** [cursor://anysphere.cursor-deeplink/mcp/install?name=mathematics&config=eyJ1cmwiOiJodHRwczovL21hdGhlbWF0aWNzLmZhc3RtY3AuYXBwL21jcCJ9](cursor://anysphere.cursor-deeplink/mcp/install?name=mathematics&config=eyJ1cmwiOiJodHRwczovL21hdGhlbWF0aWNzLmZhc3RtY3AuYXBwL21jcCJ9)
+
+**FastMCP Cloud Benefits:**
+
+- No local installation required
+- Always up-to-date with latest features
+- Enhanced performance with cloud infrastructure
+- Instant access across multiple platforms
+- Production-ready deployment
+
 ## Available MCP Tools
 
-MCP Mathematics gives you access to all its mathematical features through 21 specialized tools, each designed for specific tasks and built for excellent performance:
+MCP Mathematics gives you access to all its mathematical features through 21 specialized tools with descriptive, mathematical domain names for maximum clarity and memorability. Each tool is designed for specific tasks and built for excellent performance:
 
 ### Core Calculation Tools
 
-#### 1. `calculate` - Single Expression Evaluation
+#### 1. `evaluate_mathematical_expression` - Single Expression Evaluation
 
 The main tool for working with mathematical expressions. It supports all 52 built-in functions, unit conversions, and financial calculations. It handles everything from simple arithmetic to complex scientific computations.
 
@@ -154,9 +214,9 @@ The main tool for working with mathematical expressions. It supports all 52 buil
 - Quick calculations: `"2 * pi * 10"` → `"62.83185307179586"`
 - Scientific computing: `"sin(pi/2) + log10(1000)"` → `"4.0"`
 - Financial analysis: `"compound_interest(5000, 6.5, 15)"` → Complete interest breakdown
-- Unit conversions: `"convert_unit(100, 'km', 'mi')"` → Automatic unit detection and conversion
+- Unit conversions: `"convert_between_measurement_units(100, 'km', 'mi', 'length')"` → Automatic unit detection and conversion
 
-#### 2. `batch_calculate` - Parallel Processing Engine
+#### 2. `evaluate_multiple_mathematical_expressions` - Parallel Processing Engine
 
 Built to handle many expressions at the same time, giving you much better performance when doing lots of calculations or data analysis work.
 
@@ -173,7 +233,7 @@ Output: ["1.0", "1.0", "4.0", "120"]
 
 ### Specialized Calculation Tools
 
-#### 3. `convert_units` - Advanced Unit Conversion System
+#### 3. `convert_between_measurement_units` - Advanced Unit Conversion System
 
 Smart unit conversion system that works with 158 units across 15 categories. It automatically figures out unit types, supports different spellings, and handles complex compound units.
 
@@ -189,7 +249,7 @@ Input: value=100, from_unit="meters", to_unit="feet"
 Output: "328.084" (with automatic precision handling)
 ```
 
-#### 4. `convert_units_natural` - Natural Language Unit Conversion
+#### 4. `convert_units_from_natural_language` - Natural Language Unit Conversion
 
 Converts units using natural language queries, making unit conversions more intuitive and accessible. This tool parses natural language requests and automatically determines the appropriate conversion.
 
@@ -216,7 +276,7 @@ Output: {
 }
 ```
 
-#### 5. `calculate_statistics` - Statistical Analysis Engine
+#### 5. `compute_statistical_operations` - Statistical Analysis Engine
 
 Performs comprehensive statistical calculations on datasets, providing essential statistical measures for data analysis and scientific computing.
 
@@ -232,7 +292,7 @@ Input: data=[1, 2, 3, 4, 5], operation="mean"
 Output: "Result: 3.0"
 ```
 
-#### 6. `matrix_operation` - Matrix Mathematics Engine
+#### 6. `perform_matrix_mathematical_operations` - Matrix Mathematics Engine
 
 Advanced matrix operations for linear algebra, engineering calculations, and scientific computing with support for multiple matrix operations.
 
@@ -248,7 +308,7 @@ Input: matrices=[[[1,2],[3,4]], [[5,6],[7,8]]], operation="multiply"
 Output: Matrix multiplication result with proper formatting
 ```
 
-#### 7. `analyze_number_theory` - Number Theory Analysis
+#### 7. `perform_number_theory_analysis` - Number Theory Analysis
 
 Advanced number theory operations for mathematical research, cryptography, and computational mathematics.
 
@@ -266,7 +326,7 @@ Output: "Result: 97 is prime"
 
 ### Session Management Tools
 
-#### 8. `create_session` - Session Initialization
+#### 8. `create_mathematical_calculation_session` - Session Initialization
 
 Creates a new calculation session with optional initial variables, enabling stateful mathematical computations across multiple operations.
 
@@ -282,7 +342,7 @@ Input: session_id="analysis_1", variables={"x": 10, "pi": 3.14159}
 Output: "Session created: analysis_1"
 ```
 
-#### 9. `calculate_in_session` - Stateful Calculations
+#### 9. `evaluate_expression_in_session_context` - Stateful Calculations
 
 Performs calculations within a specific session context, with access to stored variables and the ability to save results for later use.
 
@@ -291,7 +351,7 @@ Input: session_id="analysis_1", expression="x * 2 + pi", save_as="result"
 Output: "Result: 23.14159" (and saves as 'result' variable)
 ```
 
-#### 10. `list_session_variables` - Variable Management
+#### 10. `list_mathematical_session_variables` - Variable Management
 
 Lists all variables currently stored in a calculation session, showing their names and values for easy reference.
 
@@ -300,13 +360,13 @@ Input: session_id="analysis_1"
 Output: {"x": 10, "pi": 3.14159, "result": 23.14159}
 ```
 
-#### 11. `delete_session` - Session Cleanup
+#### 11. `delete_mathematical_calculation_session` - Session Cleanup
 
 Safely removes a calculation session and all associated variables, freeing up memory and ensuring clean state management.
 
 ### System Monitoring Tools
 
-#### 12. `get_system_metrics` - Performance Monitoring
+#### 12. `get_mathematical_computation_performance_metrics` - Performance Monitoring
 
 Provides comprehensive system performance metrics including computation statistics, memory usage, and operational uptime for monitoring system health.
 
@@ -317,17 +377,17 @@ Provides comprehensive system performance metrics including computation statisti
 - Memory usage: Current memory consumption
 - System uptime: Server operational time
 
-#### 13. `get_security_status` - Security Information
+#### 13. `get_mathematical_security_audit_report` - Security Information
 
 Returns current security status including rate limiting information and session data for security monitoring and compliance.
 
-#### 14. `get_memory_usage` - Memory Analytics
+#### 14. `get_mathematical_memory_usage_statistics` - Memory Analytics
 
 Detailed memory usage statistics for cache and session management, helping with performance optimization and resource planning.
 
 ### Management and Discovery Tools
 
-#### 15. `get_calculation_history` - Calculation Audit Trail
+#### 15. `get_mathematical_computation_history` - Calculation Audit Trail
 
 Keeps a complete record of all calculations with timestamps, so you can track, check, and repeat any mathematical work.
 
@@ -338,11 +398,11 @@ Keeps a complete record of all calculations with timestamps, so you can track, c
 - Expression tracking: Full input and output logging
 - Error logging: Failed calculations with error details
 
-#### 16. `clear_history` - History Management
+#### 16. `clear_mathematical_computation_history` - History Management
 
 Lets you safely clear your calculation history when you need to for privacy, performance, or storage reasons.
 
-#### 17. `cleanup_memory` - Memory Optimization
+#### 17. `optimize_mathematical_computation_memory` - Memory Optimization
 
 Cleans up expired cache entries and optimizes memory usage, helping maintain optimal performance in long-running sessions.
 
@@ -353,25 +413,7 @@ Cleans up expired cache entries and optimizes memory usage, helping maintain opt
 - Resource reclamation: Frees unused resources
 - Performance improvement: Maintains system responsiveness
 
-#### 18. `get_recent_history` - Quick History Access
-
-Provides fast access to recent calculation history without the overhead of full history retrieval, optimized for quick reference.
-
-#### 19. `get_available_functions` - Function Reference
-
-Comprehensive listing of all available mathematical functions with their signatures, parameters, and usage examples for easy reference.
-
-#### 20. `get_math_constants` - Mathematical Constants
-
-Access to fundamental mathematical and physical constants with their precise values, including π, e, τ, and other essential constants.
-
-**Available Constants:**
-
-- Mathematical: π, e, τ, golden ratio, Euler-Mascheroni constant
-- Physical: Speed of light, Planck's constant, gravitational constant
-- Computational: Machine epsilon, infinity, NaN values
-
-#### 21. `list_functions` - Complete Capability Discovery
+#### 18. `list_all_available_mathematical_functions_and_constants` - Complete Capability Discovery
 
 Complete reference tool that gives you instant access to all available mathematical functions, constants, unit conversions, and their settings.
 
@@ -382,13 +424,15 @@ Complete reference tool that gives you instant access to all available mathemati
 - Unit conversions: All 158 units organized by category
 - System capabilities: Available operations and limits
 
+**Note**: This tool consolidates the functionality of listing functions, constants, and recent history access in a single comprehensive interface.
+
 ## MCP Resources
 
-Access these resources directly through the MCP protocol:
+Access these resources directly through the MCP protocol with their corresponding implementation functions:
 
-- **`history://recent`** - View recent calculation history
-- **`functions://available`** - Browse available mathematical functions
-- **`constants://math`** - Access mathematical constants with their values
+- **`history://recent`** - View recent calculation history (implemented by `get_recent_mathematical_computation_history`)
+- **`functions://available`** - Browse available mathematical functions (implemented by `get_available_mathematical_functions_catalog`)
+- **`constants://math`** - Access mathematical constants with their values (implemented by `get_comprehensive_mathematical_constants_catalog`)
 
 ## MCP Prompts
 
@@ -524,32 +568,32 @@ Access fundamental mathematical constants:
 ### Basic Arithmetic
 
 ```python
-calculate("2 + 3 * 4")  # Result: 14
-calculate("10 / 3")  # Result: 3.3333333333333335
-calculate("2 ** 8")  # Result: 256
+evaluate_mathematical_expression("2 + 3 * 4")  # Result: 14
+evaluate_mathematical_expression("10 / 3")  # Result: 3.3333333333333335
+evaluate_mathematical_expression("2 ** 8")  # Result: 256
 ```
 
 ### Scientific Computing
 
 ```python
-calculate("sin(pi/2)")  # Result: 1.0
-calculate("log10(1000)")  # Result: 3.0
-calculate("sqrt(16) + cos(0)")  # Result: 5.0
+evaluate_mathematical_expression("sin(pi/2)")  # Result: 1.0
+evaluate_mathematical_expression("log10(1000)")  # Result: 3.0
+evaluate_mathematical_expression("sqrt(16) + cos(0)")  # Result: 5.0
 ```
 
 ### Complex Mathematical Expressions
 
 ```python
-calculate("(2 + 3) * sqrt(16) / sin(pi/2)")  # Result: 20.0
-calculate("factorial(5) + gcd(12, 8)")  # Result: 124
+evaluate_mathematical_expression("(2 + 3) * sqrt(16) / sin(pi/2)")  # Result: 20.0
+evaluate_mathematical_expression("factorial(5) + gcd(12, 8)")  # Result: 124
 ```
 
 ### Natural Mathematical Notation
 
 ```python
-calculate("5 × 3")  # Result: 15
-calculate("20 ÷ 4")  # Result: 5.0
-calculate("2 ^ 10")  # Result: 1024
+evaluate_mathematical_expression("5 × 3")  # Result: 15
+evaluate_mathematical_expression("20 ÷ 4")  # Result: 5.0
+evaluate_mathematical_expression("2 ^ 10")  # Result: 1024
 ```
 
 ## Complete Unit Conversion System
@@ -640,9 +684,13 @@ The conversion system automatically manages precision, accepts many different in
 MCP Mathematics supports common unit aliases for convenience:
 
 ```python
-convert_unit(100, "kilometers", "miles")  # Works with full names
-convert_unit(100, "km", "mi")  # Works with abbreviations
-convert_unit(100, "metre", "yard")  # Supports alternate spellings
+convert_between_measurement_units(
+    100, "kilometers", "miles", "length"
+)  # Works with full names
+convert_between_measurement_units(100, "km", "mi", "length")  # Works with abbreviations
+convert_between_measurement_units(
+    100, "metre", "yard", "length"
+)  # Supports alternate spellings
 ```
 
 #### Auto-Detection
@@ -650,7 +698,9 @@ convert_unit(100, "metre", "yard")  # Supports alternate spellings
 The system automatically figures out unit types from context:
 
 ```python
-convert_unit(100, "kg", "lb")  # Automatically knows it's mass conversion
+convert_between_measurement_units(
+    100, "kg", "lb", "mass"
+)  # Automatically detects mass conversion
 ```
 
 #### Compound Units
@@ -684,20 +734,20 @@ conversion_history.get_recent(10)  # Retrieve last 10
 
 ```python
 # Length conversions
-convert_unit(100, "meters", "feet")  # 328.084
-convert_unit(1, "mile", "kilometers")  # 1.60934
+convert_between_measurement_units(100, "meters", "feet", "length")  # 328.084
+convert_between_measurement_units(1, "mile", "kilometers", "length")  # 1.60934
 
 # Mass conversions
-convert_unit(1, "kg", "pounds")  # 2.20462
-convert_unit(100, "grams", "ounces")  # 3.52740
+convert_between_measurement_units(1, "kg", "pounds", "mass")  # 2.20462
+convert_between_measurement_units(100, "grams", "ounces", "mass")  # 3.52740
 
 # Temperature conversions
-convert_unit(0, "C", "F")  # 32
-convert_unit(100, "F", "C")  # 37.7778
+convert_between_measurement_units(0, "C", "F", "temperature")  # 32
+convert_between_measurement_units(100, "F", "C", "temperature")  # 37.7778
 
 # Data storage conversions
-convert_unit(1024, "MB", "GB")  # 1.024
-convert_unit(1, "TB", "bytes")  # 1099511627776
+convert_between_measurement_units(1024, "MB", "GB", "data")  # 1.024
+convert_between_measurement_units(1, "TB", "bytes", "data")  # 1099511627776
 ```
 
 ## Professional Financial Calculation Suite
