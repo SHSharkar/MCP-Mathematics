@@ -1367,6 +1367,41 @@ def prime_factors(n: int) -> list[int]:
     return factors
 
 
+def parse_natural_language_conversion(text: str) -> tuple[float, str, str, str] | None:
+    """Parse natural language unit conversion requests into structured components."""
+    import re
+
+    text = text.lower().strip()
+
+    patterns = [
+        r'(?:convert|change)\s+(\d*\.?\d+)\s+(\w+)\s+(?:to|into)\s+(\w+)',
+        r'(?:what\s+is\s+)?(\d*\.?\d+)\s+(\w+)\s+(?:in|to|as)\s+(\w+)',
+        r'(\d*\.?\d+)\s+(\w+)\s*->\s*(\w+)',
+        r'(\d*\.?\d+)\s+(\w+)\s+equals?\s+how\s+many\s+(\w+)',
+        r'from\s+(\d*\.?\d+)\s+(\w+)\s+to\s+(\w+)',
+    ]
+
+    for pattern in patterns:
+        match = re.search(pattern, text)
+        if match:
+            try:
+                value = float(match.group(1))
+                from_unit = match.group(2).strip()
+                to_unit = match.group(3).strip()
+
+                from_unit_resolved = resolve_unit_alias(from_unit)
+                to_unit_resolved = resolve_unit_alias(to_unit)
+
+                unit_type = detect_unit_type(from_unit_resolved)
+                if unit_type:
+                    return value, from_unit, to_unit, unit_type
+
+            except (ValueError, IndexError):
+                continue
+
+    return None
+
+
 def convert_unit(value: float, from_unit: str, to_unit: str, unit_type: str) -> float:
     if unit_type not in UNIT_CONVERSIONS:
         raise ValueError(f"Unknown unit type: {unit_type}")
@@ -1885,6 +1920,54 @@ async def convert_units(value: float, from_unit: str, to_unit: str, unit_type: s
         return f"Result: {value} {from_unit} = {result} {to_unit}"
     except Exception as e:
         return f"Error: {str(e)}"
+
+
+@mcp.tool()
+async def convert_units_natural(query: str) -> str:
+    """Convert units using natural language input, returning structured JSON for AI agent consumption."""
+    import json
+
+    try:
+        parsed = parse_natural_language_conversion(query)
+        if not parsed:
+            return json.dumps({
+                "success": False,
+                "error": "parse_failed",
+                "query": query,
+                "supported_patterns": [
+                    "convert X unit to unit",
+                    "what is X unit in unit",
+                    "X unit -> unit",
+                    "X unit equals how many unit",
+                    "from X unit to unit"
+                ]
+            })
+
+        value, from_unit, to_unit, unit_type = parsed
+        from_unit_resolved = resolve_unit_alias(from_unit)
+        to_unit_resolved = resolve_unit_alias(to_unit)
+        result = convert_unit(value, from_unit_resolved, to_unit_resolved, unit_type)
+
+        return json.dumps({
+            "success": True,
+            "conversion": {
+                "original_query": query,
+                "input_value": value,
+                "input_unit": from_unit,
+                "output_value": result,
+                "output_unit": to_unit,
+                "unit_type": unit_type,
+                "resolved_input_unit": from_unit_resolved,
+                "resolved_output_unit": to_unit_resolved
+            }
+        })
+    except Exception as e:
+        return json.dumps({
+            "success": False,
+            "error": "conversion_failed",
+            "details": str(e),
+            "query": query
+        })
 
 
 @mcp.tool()
