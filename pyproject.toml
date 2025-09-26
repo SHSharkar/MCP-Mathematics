@@ -1,11 +1,11 @@
 [project]
 name = "mcp-mathematics"
 version = "2.0.3"
-description = "Production-ready Model Context Protocol server for mathematical operations"
+description = "Production-ready MCP server built with FastMCP v2 for comprehensive mathematical operations, providing 52 advanced functions, 158 unit conversions, and enterprise-grade security"
 readme = "README.md"
 requires-python = ">=3.10"
 authors = [{ name = "Md. Sazzad Hossain Sharkar", email = "md@szd.sh" }]
-keywords = ["mcp", "model-context-protocol", "mathematical", "scientific-computing", "ai-assistant", "claude", "fastmcp", "ast-evaluation", "secure", "production", "batch-processing", "mathematical-functions", "unicode-operators", "expression-parser"]
+keywords = ["math", "calculator", "mathematics", "mcp", "ai", "llm", "claude", "chatgpt", "gpt", "converter", "unit-conversion", "finance", "scientific", "computation", "solver", "formula", "python", "api", "tool", "assistant"]
 license = { text = "MIT" }
 urls = { Source = "https://github.com/SHSharkar/MCP-Mathematics" }
 classifiers = [
