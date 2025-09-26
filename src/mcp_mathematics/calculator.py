@@ -2159,6 +2159,9 @@ What expressions would you like to calculate?"""
 
 
 def main() -> None:
+    import asyncio
+    import sys
+
     setup_graceful_shutdown()
     start_memory_cleanup_timer()
 
@@ -2176,7 +2179,32 @@ def main() -> None:
         )
 
     try:
-        mcp.run()
+        try:
+            loop = asyncio.get_running_loop()
+            if SECURITY_AUDIT_LOGGING_ENABLED:
+                async_mathematical_logger.log(
+                    logging.INFO, "Detected existing event loop (cloud environment)"
+                )
+        except RuntimeError:
+            loop = None
+            if SECURITY_AUDIT_LOGGING_ENABLED:
+                async_mathematical_logger.log(
+                    logging.INFO, "No existing event loop detected (local environment)"
+                )
+
+        if loop is not None:
+            if hasattr(mcp, 'serve'):
+                if SECURITY_AUDIT_LOGGING_ENABLED:
+                    async_mathematical_logger.log(logging.INFO, "Using serve() for cloud deployment")
+                return mcp.serve()
+            else:
+                if SECURITY_AUDIT_LOGGING_ENABLED:
+                    async_mathematical_logger.log(logging.INFO, "Returning mcp instance for cloud handler")
+                return mcp
+        else:
+            if SECURITY_AUDIT_LOGGING_ENABLED:
+                async_mathematical_logger.log(logging.INFO, "Using run() for local deployment")
+            mcp.run()
     except Exception as e:
         if SECURITY_AUDIT_LOGGING_ENABLED:
             async_mathematical_logger.log(
@@ -2184,7 +2212,8 @@ def main() -> None:
             )
         raise
     finally:
-        shutdown_memory_management()
+        if loop is None:
+            shutdown_memory_management()
 
 
 if __name__ == "__main__":
