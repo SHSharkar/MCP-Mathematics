@@ -16,6 +16,18 @@ from typing import Annotated, Any
 
 from fastmcp import FastMCP, Context
 
+@dataclass
+class MatrixOperationChoice:
+    operation: str
+
+@dataclass
+class NumberTheoryOperationChoice:
+    operation: str
+
+@dataclass
+class StatisticsOperationChoice:
+    operation: str
+
 MAXIMUM_MATHEMATICAL_EXPRESSION_CHARACTER_LIMIT = 1000
 MAXIMUM_AST_NODE_DEPTH_LIMIT = 10
 CALCULATION_HISTORY_ENTRY_LIMIT = 100
@@ -1881,7 +1893,18 @@ async def calculate_statistics(data: list[float], operation: str, ctx: Context) 
     """Calculate statistical measures for a dataset including mean, median, mode, variance, and standard deviation."""
     try:
         if operation not in STATISTICS_FUNCTIONS:
-            return f"Error: Unknown operation {operation}"
+            elicit_result = await ctx.elicit(
+                message=f"Unknown operation '{operation}'. Please select a statistical operation:",
+                response_type=StatisticsOperationChoice
+            )
+
+            if elicit_result.action == "accept":
+                operation = elicit_result.data.operation
+                if operation not in STATISTICS_FUNCTIONS:
+                    valid_ops = ", ".join(sorted(STATISTICS_FUNCTIONS.keys()))
+                    return f"Error: Invalid operation selection '{operation}'. Valid options are: {valid_ops}"
+            else:
+                return "Operation cancelled by user"
 
         await ctx.report_progress(progress=25, total=100)
         func = STATISTICS_FUNCTIONS[operation]
@@ -1925,7 +1948,38 @@ async def matrix_operation(matrices: list[list[list[float]]], operation: str, ct
             return f"Result: {result}"
 
         else:
-            return f"Error: Unknown operation {operation}"
+            elicit_result = await ctx.elicit(
+                message=f"Unknown operation '{operation}'. Please select a matrix operation:",
+                response_type=MatrixOperationChoice
+            )
+
+            if elicit_result.action == "accept":
+                operation = elicit_result.data.operation
+                if operation == "multiply":
+                    if len(matrices) != 2:
+                        return "Error: Matrix multiplication requires exactly 2 matrices"
+                    await ctx.report_progress(progress=25, total=100)
+                    result_matrix = matrix_multiply(matrices[0], matrices[1])
+                    await ctx.report_progress(progress=100, total=100)
+                    return f"Result: {result_matrix}"
+                elif operation == "determinant":
+                    if len(matrices) != 1:
+                        return "Error: Determinant requires exactly 1 matrix"
+                    await ctx.report_progress(progress=50, total=100)
+                    result_det = matrix_determinant(matrices[0])
+                    await ctx.report_progress(progress=100, total=100)
+                    return f"Result: {result_det}"
+                elif operation == "inverse":
+                    if len(matrices) != 1:
+                        return "Error: Inverse requires exactly 1 matrix"
+                    await ctx.report_progress(progress=40, total=100)
+                    result_inv = matrix_inverse(matrices[0])
+                    await ctx.report_progress(progress=100, total=100)
+                    return f"Result: {result_inv}"
+                else:
+                    return f"Error: Invalid operation selection '{operation}'. Valid options are: multiply, determinant, inverse"
+            else:
+                return "Operation cancelled by user"
 
     except Exception as e:
         return f"Error: {str(e)}"
@@ -2027,7 +2081,37 @@ async def analyze_number_theory(n: int, operation: str, ctx: Context) -> str:
             return f"Result: Euler's totient of {n} = {result}"
 
         else:
-            return f"Error: Unknown operation {operation}"
+            elicit_result = await ctx.elicit(
+                message=f"Unknown operation '{operation}'. Please select a number theory operation:",
+                response_type=NumberTheoryOperationChoice
+            )
+
+            if elicit_result.action == "accept":
+                operation = elicit_result.data.operation
+                if operation == "is_prime":
+                    await ctx.report_progress(progress=50, total=100)
+                    result = is_prime(n)
+                    await ctx.report_progress(progress=100, total=100)
+                    return f"Result: {n} is {'prime' if result else 'not prime'}"
+                elif operation == "prime_factors":
+                    await ctx.report_progress(progress=25, total=100)
+                    result = prime_factors(n)
+                    await ctx.report_progress(progress=100, total=100)
+                    return f"Result: Prime factors of {n} = {result}"
+                elif operation == "divisors":
+                    await ctx.report_progress(progress=30, total=100)
+                    divisors = [i for i in range(1, n + 1) if n % i == 0]
+                    await ctx.report_progress(progress=100, total=100)
+                    return f"Result: Divisors of {n} = {divisors}"
+                elif operation == "totient":
+                    await ctx.report_progress(progress=35, total=100)
+                    result = sum(1 for i in range(1, n) if math.gcd(i, n) == 1)
+                    await ctx.report_progress(progress=100, total=100)
+                    return f"Result: Euler's totient of {n} = {result}"
+                else:
+                    return f"Error: Invalid operation selection '{operation}'. Valid options are: is_prime, prime_factors, divisors, totient"
+            else:
+                return "Operation cancelled by user"
 
     except Exception as e:
         return f"Error: {str(e)}"
