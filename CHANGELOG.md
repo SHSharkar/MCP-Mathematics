@@ -7,9 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.2.1] - 2025-09-26
 
+### Added
+- GitHub Actions workflow for automated PyPI publishing with Trusted Publisher support
+- Comprehensive project URLs in pyproject.toml for PyPI verification (Homepage, Source, Repository, Issues, Documentation)
+
 ### Fixed
 - Version alignment between pyproject.toml and uv.lock
 - Documentation corrections and updates
+
+### Changed
+- Updated Python version to 3.13 in GitHub Actions workflow
 
 ## [2.2.0] - 2025-09-26
 
