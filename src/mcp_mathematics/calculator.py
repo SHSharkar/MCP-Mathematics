@@ -1834,7 +1834,7 @@ async def get_memory_usage() -> str:
         )
         return "\\n".join(lines)
     except ImportError:
-        return "Error: The psutil package is required for memory monitoring"
+        return "Error: psutil package is required for memory monitoring"
     except Exception as e:
         return f"Error getting memory usage: {str(e)}"
 
@@ -1845,7 +1845,7 @@ async def calculate(expression: str) -> str:
     global _active_mathematical_computations
 
     if _shutdown_requested:
-        return "Error: The server is shutting down and cannot accept new requests"
+        return "Error: Server is shutting down and cannot accept new requests"
 
     _active_mathematical_computations += 1
 
@@ -2032,7 +2032,7 @@ async def calculate_in_session(session_id: str, expression: str, save_as: str | 
     global _active_mathematical_computations
 
     if _shutdown_requested:
-        return "Error: The server is shutting down"
+        return "Error: Server is shutting down"
 
     _active_mathematical_computations += 1
 
@@ -2082,7 +2082,7 @@ async def get_calculation_history(limit: int = 10) -> str:
 
     history = mathematical_calculation_history.get_recent(limit)
     if not history:
-        return "No calculation history available."
+        return "No calculation history available"
 
     lines = ["Recent Calculations:"]
     for entry in history:
@@ -2094,7 +2094,7 @@ async def get_calculation_history(limit: int = 10) -> str:
 async def clear_history() -> str:
     """Clear all stored calculation history entries."""
     mathematical_calculation_history.clear()
-    return "Calculation history has been cleared successfully"
+    return "Calculation history cleared successfully"
 
 
 @mcp.tool()
@@ -2150,7 +2150,7 @@ async def list_functions() -> str:
 async def get_recent_history() -> str:
     history = mathematical_calculation_history.get_recent(20)
     if not history:
-        return "No calculation history available."
+        return "No calculation history available"
 
     lines = ["Recent Calculations:"]
     for entry in history:
