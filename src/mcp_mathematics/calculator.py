@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 from threading import RLock
 from typing import Annotated, Any
 
-from fastmcp import FastMCP
+from fastmcp import FastMCP, Context
 
 MAXIMUM_MATHEMATICAL_EXPRESSION_CHARACTER_LIMIT = 1000
 MAXIMUM_AST_NODE_DEPTH_LIMIT = 10
@@ -1704,13 +1704,13 @@ _active_mathematical_computations = 0
 
 
 
-mcp = FastMCP("MCP Math")
+mcp = FastMCP("MCP Mathematics")
 
 
 @mcp.tool()
 async def get_system_metrics() -> str:
     """Get comprehensive system performance metrics including computation statistics and uptime."""
-    metrics = ["MCP Math System Metrics:"]
+    metrics = ["MCP Mathematics System Metrics:"]
     metrics.append("=" * 40)
 
     with _computation_metrics_lock:
@@ -1775,7 +1775,7 @@ async def get_system_metrics() -> str:
 @mcp.tool()
 async def get_security_status() -> str:
     """Get the current security status including rate limiting and session information."""
-    security_info = ["MCP Math Security Status:"]
+    security_info = ["MCP Mathematics Security Status:"]
     security_info.append("=" * 35)
 
     security_info.append("Rate Limiting:")
@@ -1815,7 +1815,7 @@ async def get_memory_usage() -> str:
     """Get detailed memory usage statistics for cache and session management."""
     try:
         stats = get_memory_usage_stats()
-        lines = ["MCP Math Memory Usage:"]
+        lines = ["MCP Mathematics Memory Usage:"]
         lines.append("=" * 30)
         lines.append(f"Process Memory: {stats['process_memory_mb']} MB")
         lines.append(f"Virtual Memory: {stats['virtual_memory_mb']} MB")
@@ -1859,10 +1859,15 @@ async def calculate(expression: str) -> str:
 
 
 @mcp.tool()
-async def batch_calculate(expressions: list[str]) -> str:
+async def batch_calculate(expressions: list[str], ctx: Context) -> str:
     """Process multiple mathematical expressions in a single batch operation."""
     results = []
-    for expr in expressions:
+    total_expressions = len(expressions)
+
+    for i, expr in enumerate(expressions):
+        progress_percent = ((i + 1) / total_expressions) * 100
+        await ctx.report_progress(progress=progress_percent, total=100)
+
         result = compute_expression(expr)
         if result.success:
             results.append(f"{expr} = {result.result}")
@@ -1872,14 +1877,17 @@ async def batch_calculate(expressions: list[str]) -> str:
 
 
 @mcp.tool()
-async def calculate_statistics(data: list[float], operation: str) -> str:
+async def calculate_statistics(data: list[float], operation: str, ctx: Context) -> str:
     """Calculate statistical measures for a dataset including mean, median, mode, variance, and standard deviation."""
     try:
         if operation not in STATISTICS_FUNCTIONS:
             return f"Error: Unknown operation {operation}"
 
+        await ctx.report_progress(progress=25, total=100)
         func = STATISTICS_FUNCTIONS[operation]
+        await ctx.report_progress(progress=75, total=100)
         result = func(data)
+        await ctx.report_progress(progress=100, total=100)
 
         return f"Result: {result}"
     except statistics.StatisticsError as e:
@@ -1889,25 +1897,31 @@ async def calculate_statistics(data: list[float], operation: str) -> str:
 
 
 @mcp.tool()
-async def matrix_operation(matrices: list[list[list[float]]], operation: str) -> str:
+async def matrix_operation(matrices: list[list[list[float]]], operation: str, ctx: Context) -> str:
     """Perform matrix operations including multiplication, transpose, determinant, and inverse."""
     try:
         if operation == "multiply":
             if len(matrices) != 2:
                 return "Error: Matrix multiplication requires exactly 2 matrices"
+            await ctx.report_progress(progress=25, total=100)
             result = matrix_multiply(matrices[0], matrices[1])
+            await ctx.report_progress(progress=100, total=100)
             return f"Result: {result}"
 
         elif operation == "determinant":
             if len(matrices) != 1:
                 return "Error: Determinant requires exactly 1 matrix"
+            await ctx.report_progress(progress=50, total=100)
             result = matrix_determinant(matrices[0])
+            await ctx.report_progress(progress=100, total=100)
             return f"Result: {result}"
 
         elif operation == "inverse":
             if len(matrices) != 1:
                 return "Error: Inverse requires exactly 1 matrix"
+            await ctx.report_progress(progress=40, total=100)
             result = matrix_inverse(matrices[0])
+            await ctx.report_progress(progress=100, total=100)
             return f"Result: {result}"
 
         else:
@@ -1985,23 +1999,31 @@ async def convert_units_natural(query: str) -> str:
 
 
 @mcp.tool()
-async def analyze_number_theory(n: int, operation: str) -> str:
+async def analyze_number_theory(n: int, operation: str, ctx: Context) -> str:
     """Analyze number theory properties including primality, factors, GCD, LCM, and Fibonacci."""
     try:
         if operation == "is_prime":
+            await ctx.report_progress(progress=50, total=100)
             result = is_prime(n)
+            await ctx.report_progress(progress=100, total=100)
             return f"Result: {n} is {'prime' if result else 'not prime'}"
 
         elif operation == "prime_factors":
+            await ctx.report_progress(progress=25, total=100)
             result = prime_factors(n)
+            await ctx.report_progress(progress=100, total=100)
             return f"Result: Prime factors of {n} = {result}"
 
         elif operation == "divisors":
+            await ctx.report_progress(progress=30, total=100)
             divisors = [i for i in range(1, n + 1) if n % i == 0]
+            await ctx.report_progress(progress=100, total=100)
             return f"Result: Divisors of {n} = {divisors}"
 
         elif operation == "totient":
+            await ctx.report_progress(progress=35, total=100)
             result = sum(1 for i in range(1, n) if math.gcd(i, n) == 1)
+            await ctx.report_progress(progress=100, total=100)
             return f"Result: Euler's totient of {n} = {result}"
 
         else:

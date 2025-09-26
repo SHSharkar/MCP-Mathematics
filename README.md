@@ -141,7 +141,7 @@ If you're using VS Code with the Continue extension:
 
 ## Available MCP Tools
 
-MCP Mathematics gives you access to all its mathematical features through seven specialized tools, each designed for specific tasks and built for excellent performance:
+MCP Mathematics gives you access to all its mathematical features through 21 specialized tools, each designed for specific tasks and built for excellent performance:
 
 ### Core Calculation Tools
 
@@ -173,7 +173,7 @@ Output: ["1.0", "1.0", "4.0", "120"]
 
 ### Specialized Calculation Tools
 
-#### 3. `convert_unit` - Advanced Unit Conversion System
+#### 3. `convert_units` - Advanced Unit Conversion System
 
 Smart unit conversion system that works with 158 units across 15 categories. It automatically figures out unit types, supports different spellings, and handles complex compound units.
 
@@ -189,25 +189,145 @@ Input: value=100, from_unit="meters", to_unit="feet"
 Output: "328.084" (with automatic precision handling)
 ```
 
-#### 4. `financial_calculate` - Complete Financial Engine
+#### 4. `convert_units_natural` - Natural Language Unit Conversion
 
-Complete set of financial tools for professional use. It supports interest calculations, loan analysis, tax computations, and business calculations.
+Converts units using natural language queries, making unit conversions more intuitive and accessible. This tool parses natural language requests and automatically determines the appropriate conversion.
 
-**Financial Functions Available:**
+**Supported Natural Language Patterns:**
 
-- Interest: Simple, compound, continuous compounding
-- Loans: Payment calculations, amortization schedules
-- Business: Markup, discount, profit margin analysis
-- Personal: Bill splitting, tip calculation, tax computation
+- "convert 100 meters to feet"
+- "what is 32 Celsius in Fahrenheit"
+- "50 mph -> km/h"
+- "5 kilograms equals how many pounds"
+- "from 100 USD to EUR"
 
 ```
-Input: function="compound_interest", principal=1000, rate=5, time=10, frequency=12
-Output: {"amount": 1647.01, "interest": 647.01, "effective_rate": 5.12}
+Input: "convert 100 kilometers to miles"
+Output: {
+  "success": true,
+  "conversion": {
+    "original_query": "convert 100 kilometers to miles",
+    "input_value": 100,
+    "input_unit": "kilometers",
+    "output_value": 62.137119,
+    "output_unit": "miles",
+    "unit_type": "length"
+  }
+}
 ```
+
+#### 5. `calculate_statistics` - Statistical Analysis Engine
+
+Performs comprehensive statistical calculations on datasets, providing essential statistical measures for data analysis and scientific computing.
+
+**Available Statistical Operations:**
+
+- Descriptive statistics: mean, median, mode, range
+- Variability measures: variance, standard deviation
+- Distribution analysis: skewness, kurtosis
+- Data quality: quartiles, percentiles
+
+```
+Input: data=[1, 2, 3, 4, 5], operation="mean"
+Output: "Result: 3.0"
+```
+
+#### 6. `matrix_operation` - Matrix Mathematics Engine
+
+Advanced matrix operations for linear algebra, engineering calculations, and scientific computing with support for multiple matrix operations.
+
+**Supported Matrix Operations:**
+
+- Basic operations: multiply, transpose
+- Advanced operations: determinant, inverse
+- Matrix analysis: rank, eigenvalues (where applicable)
+- Error handling for invalid operations
+
+```
+Input: matrices=[[[1,2],[3,4]], [[5,6],[7,8]]], operation="multiply"
+Output: Matrix multiplication result with proper formatting
+```
+
+#### 7. `analyze_number_theory` - Number Theory Analysis
+
+Advanced number theory operations for mathematical research, cryptography, and computational mathematics.
+
+**Available Number Theory Operations:**
+
+- Prime testing: Check if numbers are prime
+- Prime factorization: Find all prime factors
+- Divisor analysis: Calculate all divisors
+- Euler's totient: Compute φ(n) function
+
+```
+Input: n=97, operation="is_prime"
+Output: "Result: 97 is prime"
+```
+
+### Session Management Tools
+
+#### 8. `create_session` - Session Initialization
+
+Creates a new calculation session with optional initial variables, enabling stateful mathematical computations across multiple operations.
+
+**Session Features:**
+
+- Variable storage: Save and reuse calculation results
+- State persistence: Maintain context across operations
+- Isolated environments: Multiple independent sessions
+- Custom initialization: Set initial variables
+
+```
+Input: session_id="analysis_1", variables={"x": 10, "pi": 3.14159}
+Output: "Session created: analysis_1"
+```
+
+#### 9. `calculate_in_session` - Stateful Calculations
+
+Performs calculations within a specific session context, with access to stored variables and the ability to save results for later use.
+
+```
+Input: session_id="analysis_1", expression="x * 2 + pi", save_as="result"
+Output: "Result: 23.14159" (and saves as 'result' variable)
+```
+
+#### 10. `list_session_variables` - Variable Management
+
+Lists all variables currently stored in a calculation session, showing their names and values for easy reference.
+
+```
+Input: session_id="analysis_1"
+Output: {"x": 10, "pi": 3.14159, "result": 23.14159}
+```
+
+#### 11. `delete_session` - Session Cleanup
+
+Safely removes a calculation session and all associated variables, freeing up memory and ensuring clean state management.
+
+### System Monitoring Tools
+
+#### 12. `get_system_metrics` - Performance Monitoring
+
+Provides comprehensive system performance metrics including computation statistics, memory usage, and operational uptime for monitoring system health.
+
+**Metrics Included:**
+
+- Computation statistics: Total calculations performed
+- Performance data: Average response times
+- Memory usage: Current memory consumption
+- System uptime: Server operational time
+
+#### 13. `get_security_status` - Security Information
+
+Returns current security status including rate limiting information and session data for security monitoring and compliance.
+
+#### 14. `get_memory_usage` - Memory Analytics
+
+Detailed memory usage statistics for cache and session management, helping with performance optimization and resource planning.
 
 ### Management and Discovery Tools
 
-#### 5. `get_calculation_history` - Calculation Audit Trail
+#### 15. `get_calculation_history` - Calculation Audit Trail
 
 Keeps a complete record of all calculations with timestamps, so you can track, check, and repeat any mathematical work.
 
@@ -218,11 +338,40 @@ Keeps a complete record of all calculations with timestamps, so you can track, c
 - Expression tracking: Full input and output logging
 - Error logging: Failed calculations with error details
 
-#### 6. `clear_history` - History Management
+#### 16. `clear_history` - History Management
 
 Lets you safely clear your calculation history when you need to for privacy, performance, or storage reasons.
 
-#### 7. `list_functions` - Function and Capability Discovery
+#### 17. `cleanup_memory` - Memory Optimization
+
+Cleans up expired cache entries and optimizes memory usage, helping maintain optimal performance in long-running sessions.
+
+**Optimization Features:**
+
+- Cache cleanup: Removes expired cache entries
+- Memory defragmentation: Optimizes memory allocation
+- Resource reclamation: Frees unused resources
+- Performance improvement: Maintains system responsiveness
+
+#### 18. `get_recent_history` - Quick History Access
+
+Provides fast access to recent calculation history without the overhead of full history retrieval, optimized for quick reference.
+
+#### 19. `get_available_functions` - Function Reference
+
+Comprehensive listing of all available mathematical functions with their signatures, parameters, and usage examples for easy reference.
+
+#### 20. `get_math_constants` - Mathematical Constants
+
+Access to fundamental mathematical and physical constants with their precise values, including π, e, τ, and other essential constants.
+
+**Available Constants:**
+
+- Mathematical: π, e, τ, golden ratio, Euler-Mascheroni constant
+- Physical: Speed of light, Planck's constant, gravitational constant
+- Computational: Machine epsilon, infinity, NaN values
+
+#### 21. `list_functions` - Complete Capability Discovery
 
 Complete reference tool that gives you instant access to all available mathematical functions, constants, unit conversions, and their settings.
 
@@ -231,7 +380,7 @@ Complete reference tool that gives you instant access to all available mathemati
 - Mathematical functions: All 52 available functions with signatures
 - Constants: Mathematical and physical constants with values
 - Unit conversions: All 158 units organized by category
-- Financial functions: Complete financial calculation catalog
+- System capabilities: Available operations and limits
 
 ## MCP Resources
 
