@@ -7,7 +7,12 @@ requires-python = ">=3.10"
 authors = [{ name = "Md. Sazzad Hossain Sharkar", email = "md@szd.sh" }]
 keywords = ["math", "calculator", "mathematics", "mcp", "ai", "llm", "claude", "chatgpt", "gpt", "converter", "unit-conversion", "finance", "scientific", "computation", "solver", "formula", "python", "api", "tool", "assistant"]
 license = { text = "MIT" }
-urls = { Source = "https://github.com/SHSharkar/MCP-Mathematics" }
+[project.urls]
+Homepage = "https://github.com/SHSharkar/MCP-Mathematics"
+Source = "https://github.com/SHSharkar/MCP-Mathematics"
+Repository = "https://github.com/SHSharkar/MCP-Mathematics"
+Issues = "https://github.com/SHSharkar/MCP-Mathematics/issues"
+Documentation = "https://github.com/SHSharkar/MCP-Mathematics#readme"
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
