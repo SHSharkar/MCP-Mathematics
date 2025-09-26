@@ -1094,7 +1094,7 @@ def evaluate_mathematical_node(node: ast.AST, session_vars: dict | None = None) 
                     f"Factorial input too large (max: {FACTORIAL_COMPUTATION_UPPER_BOUND})"
                 )
             if args[0] < 0 or not isinstance(args[0], int):
-                raise ValueError("Factorial requires non-negative integer")
+                raise ValueError("Factorial requires a non-negative integer")
 
         elif func_name == "pow" and len(args) == 2:
             if abs(args[1]) > EXPONENTIATION_SAFETY_THRESHOLD:
@@ -1332,7 +1332,7 @@ def matrix_inverse(matrix: list[list[float]]) -> list[list[float]]:
     det = matrix_determinant(matrix)
 
     if abs(det) < 1e-10:
-        raise ValueError("Matrix is singular (determinant is zero)")
+        raise ValueError("Matrix is singular (determinant equals zero)")
 
     if n == 2:
         return [
@@ -1340,7 +1340,7 @@ def matrix_inverse(matrix: list[list[float]]) -> list[list[float]]:
             [-matrix[1][0] / det, matrix[0][0] / det],
         ]
 
-    raise ValueError("Matrix inverse only implemented for 2x2 matrices")
+    raise ValueError("Matrix inverse is only implemented for 2x2 matrices")
 
 
 def is_prime(n: int) -> bool:
@@ -1667,7 +1667,7 @@ mcp = FastMCP("MCP Math")
 
 @mcp.tool()
 async def get_system_metrics() -> str:
-    """Get comprehensive system performance metrics including computation stats and uptime."""
+    """Get comprehensive system performance metrics including computation statistics and uptime."""
     metrics = ["MCP Math System Metrics:"]
     metrics.append("=" * 40)
 
@@ -1732,7 +1732,7 @@ async def get_system_metrics() -> str:
 
 @mcp.tool()
 async def get_security_status() -> str:
-    """Get current security status including rate limiting and session information."""
+    """Get the current security status including rate limiting and session information."""
     security_info = ["MCP Math Security Status:"]
     security_info.append("=" * 35)
 
@@ -1792,7 +1792,7 @@ async def get_memory_usage() -> str:
         )
         return "\\n".join(lines)
     except ImportError:
-        return "Error: psutil package required for memory monitoring"
+        return "Error: The psutil package is required for memory monitoring"
     except Exception as e:
         return f"Error getting memory usage: {str(e)}"
 
@@ -1803,7 +1803,7 @@ async def calculate(expression: str) -> str:
     global _active_mathematical_computations
 
     if _shutdown_requested:
-        return "Error: Server is shutting down, not accepting new requests"
+        return "Error: The server is shutting down and cannot accept new requests"
 
     _active_mathematical_computations += 1
 
@@ -1831,7 +1831,7 @@ async def batch_calculate(expressions: list[str]) -> str:
 
 @mcp.tool()
 async def calculate_statistics(data: list[float], operation: str) -> str:
-    """Calculate statistical measures for a dataset including mean, median, mode, variance, and std_dev."""
+    """Calculate statistical measures for a dataset including mean, median, mode, variance, and standard deviation."""
     try:
         if operation not in STATISTICS_FUNCTIONS:
             return f"Error: Unknown operation {operation}"
@@ -1848,11 +1848,11 @@ async def calculate_statistics(data: list[float], operation: str) -> str:
 
 @mcp.tool()
 async def matrix_operation(matrices: list[list[list[float]]], operation: str) -> str:
-    """Perform matrix operations including multiply, transpose, determinant, and inverse."""
+    """Perform matrix operations including multiplication, transpose, determinant, and inverse."""
     try:
         if operation == "multiply":
             if len(matrices) != 2:
-                return "Error: Matrix multiply requires exactly 2 matrices"
+                return "Error: Matrix multiplication requires exactly 2 matrices"
             result = matrix_multiply(matrices[0], matrices[1])
             return f"Result: {result}"
 
@@ -1877,7 +1877,7 @@ async def matrix_operation(matrices: list[list[list[float]]], operation: str) ->
 
 @mcp.tool()
 async def convert_units(value: float, from_unit: str, to_unit: str, unit_type: str) -> str:
-    """Convert between different units of measurement across 158 supported unit conversions."""
+    """Convert between different units of measurement across 158 supported conversions."""
     try:
         result = convert_unit(value, from_unit, to_unit, unit_type)
         return f"Result: {value} {from_unit} = {result} {to_unit}"
@@ -1929,11 +1929,11 @@ async def create_session(
 
 @mcp.tool()
 async def calculate_in_session(session_id: str, expression: str, save_as: str | None = None) -> str:
-    """Execute calculations within a session context with variable storage and retrieval."""
+    """Execute calculations within a session context, with variable storage and retrieval."""
     global _active_mathematical_computations
 
     if _shutdown_requested:
-        return "Error: Server is shutting down"
+        return "Error: The server is shutting down"
 
     _active_mathematical_computations += 1
 
@@ -1952,7 +1952,7 @@ async def calculate_in_session(session_id: str, expression: str, save_as: str | 
 
 @mcp.tool()
 async def list_session_variables(session_id: str) -> str:
-    """List all variables stored in a specific calculation session."""
+    """List all variables stored in the specified calculation session."""
     variables = _get_session_manager().get_session(session_id)
     if variables is None:
         return f"Error: Session {session_id} not found"
@@ -1969,7 +1969,7 @@ async def list_session_variables(session_id: str) -> str:
 
 @mcp.tool()
 async def delete_session(session_id: str) -> str:
-    """Delete a calculation session and free associated resources."""
+    """Delete a calculation session and free its associated resources."""
     if _get_session_manager().delete_session(session_id):
         return f"Session {session_id} deleted"
     return f"Session {session_id} not found"
@@ -1995,7 +1995,7 @@ async def get_calculation_history(limit: int = 10) -> str:
 async def clear_history() -> str:
     """Clear all stored calculation history entries."""
     mathematical_calculation_history.clear()
-    return "Calculation history cleared successfully"
+    return "Calculation history has been cleared successfully"
 
 
 @mcp.tool()
@@ -2124,7 +2124,7 @@ async def scientific_calculation(
     precision: Annotated[int, "Decimal precision for results"] = 6,
     include_steps: Annotated[bool, "Include step-by-step solution"] = False
 ) -> str:
-    """Generates a customized scientific calculation prompt."""
+    """Generate a customized scientific calculation prompt."""
     prompts = {
         "general": f"Calculate the following expression with {precision} decimal places",
         "trigonometric": f"Solve this trigonometric problem with {precision} precision",
@@ -2135,7 +2135,7 @@ async def scientific_calculation(
     base_prompt = prompts.get(expression_type, prompts["general"])
 
     if include_steps:
-        base_prompt += " and show detailed step-by-step solution"
+        base_prompt += " and show a detailed step-by-step solution"
 
     base_prompt += ".\n\nExamples:"
 
@@ -2157,7 +2157,7 @@ async def batch_calculation(
     operation_types: Annotated[list[str], "Types of operations to include"] = None,
     complexity: Annotated[str, "Complexity level: simple, medium, advanced"] = "medium"
 ) -> str:
-    """Generates a batch calculation prompt with specified parameters."""
+    """Generate a batch calculation prompt with the specified parameters."""
     if operation_types is None:
         operation_types = ["arithmetic", "trigonometric"]
 
