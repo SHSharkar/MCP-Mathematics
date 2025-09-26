@@ -1,3 +1,9 @@
-from mcp_mathematics import main
+from mcp_mathematics import mcp
 
-main()
+
+def main():
+    mcp.run()
+
+
+if __name__ == "__main__":
+    main()

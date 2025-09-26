@@ -1,4 +1,1 @@
-from .calculator import main
-
-if __name__ == "__main__":
-    main()
+from .calculator import mcp as mcp

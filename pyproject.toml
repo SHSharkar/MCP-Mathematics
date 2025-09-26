@@ -25,7 +25,7 @@ dependencies = [
 ]
 
 [project.scripts]
-mcp-mathematics = "mcp_mathematics:main"
+mcp-mathematics = "mcp_mathematics.__main__:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/mcp_mathematics"]
