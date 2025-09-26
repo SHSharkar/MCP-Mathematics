@@ -1368,7 +1368,14 @@ def prime_factors(n: int) -> list[int]:
 
 
 def parse_natural_language_conversion(text: str) -> tuple[float, str, str, str] | None:
-    """Parse natural language unit conversion requests into structured components."""
+    """Parse natural language conversion queries.
+
+    Args:
+        text (str): Natural language conversion request
+
+    Returns:
+        tuple[float, str, str, str] | None: Parsed conversion data or None
+    """
     import re
 
     text = text.lower().strip()
@@ -1924,7 +1931,14 @@ async def convert_units(value: float, from_unit: str, to_unit: str, unit_type: s
 
 @mcp.tool()
 async def convert_units_natural(query: str) -> str:
-    """Convert units using natural language input, returning structured JSON for AI agent consumption."""
+    """Convert units using natural language queries.
+
+    Args:
+        query (str): Natural language conversion request
+
+    Returns:
+        str: JSON response with conversion results or error
+    """
     import json
 
     try:
