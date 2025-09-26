@@ -26,12 +26,12 @@ jobs:
       contents: write
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Set up Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         python-version: '3.13'
 
@@ -108,12 +108,10 @@ jobs:
         skip-existing: true
 
     - name: Create GitHub Release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      uses: softprops/action-gh-release@v2
       with:
         tag_name: v${{ steps.version.outputs.version }}
-        release_name: Release v${{ steps.version.outputs.version }}
+        name: Release v${{ steps.version.outputs.version }}
         body: |
           ## Version ${{ steps.version.outputs.version }}
 
