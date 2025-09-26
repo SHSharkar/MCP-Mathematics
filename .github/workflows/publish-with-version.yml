@@ -46,6 +46,7 @@ jobs:
         python - << 'EOF'
         import toml
         import sys
+        import os
 
         with open('pyproject.toml', 'r') as f:
             data = toml.load(f)
@@ -70,7 +71,9 @@ jobs:
         with open('pyproject.toml', 'w') as f:
             toml.dump(data, f)
 
-        print(f"::set-output name=version::{new_version}")
+        with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+            print(f"version={new_version}", file=f)
+
         print(f"Bumped from {current} to {new_version}")
         EOF
 
