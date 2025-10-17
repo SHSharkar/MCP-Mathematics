@@ -1746,7 +1746,11 @@ mcp = FastMCP("MCP Mathematics")
 @mcp.tool(
     title="Performance Metrics",
     tags={"monitoring", "performance", "metrics", "system"},
-    meta={"category": "monitoring", "complexity": "low"}
+    meta={"category": "monitoring", "complexity": "low"},
+    annotations=ToolAnnotations(
+        idempotent=True,
+        read_only=True
+    )
 )
 async def get_performance_metrics() -> dict:
     """Get performance metrics"""
@@ -1819,7 +1823,11 @@ async def get_performance_metrics() -> dict:
 @mcp.tool(
     title="Security Status",
     tags={"security", "monitoring", "audit", "system"},
-    meta={"category": "security", "complexity": "low"}
+    meta={"category": "security", "complexity": "low"},
+    annotations=ToolAnnotations(
+        idempotent=True,
+        read_only=True
+    )
 )
 async def get_security_status() -> dict:
     """Get security status"""
@@ -1856,7 +1864,11 @@ async def get_security_status() -> dict:
 @mcp.tool(
     title="Memory Statistics",
     tags={"monitoring", "memory", "performance", "system"},
-    meta={"category": "monitoring", "complexity": "low"}
+    meta={"category": "monitoring", "complexity": "low"},
+    annotations=ToolAnnotations(
+        idempotent=True,
+        read_only=True
+    )
 )
 async def get_memory_statistics() -> dict:
     """Get memory statistics"""
@@ -1902,7 +1914,10 @@ async def get_memory_statistics() -> dict:
 @mcp.tool(
     title="Calculate Expression",
     tags={"calculation", "basic", "math", "expression"},
-    meta={"category": "calculation", "complexity": "medium"}
+    meta={"category": "calculation", "complexity": "medium"},
+    annotations=ToolAnnotations(
+        idempotent=True
+    )
 )
 async def calculate_expression(expr: Annotated[str, "Mathematical expression to evaluate"]) -> dict:
     """Evaluate math expression"""
@@ -2091,7 +2106,10 @@ async def matrix_operation(
 @mcp.tool(
     title="Unit Conversion",
     tags={"conversion", "units", "measurement"},
-    meta={"category": "conversion", "complexity": "low"}
+    meta={"category": "conversion", "complexity": "low"},
+    annotations=ToolAnnotations(
+        idempotent=True
+    )
 )
 async def convert_units(
     value: Annotated[float, "Numeric value to convert"],
@@ -2121,7 +2139,10 @@ async def convert_units(
 @mcp.tool(
     title="Natural Language Conversion",
     tags={"conversion", "natural-language", "units", "nlp"},
-    meta={"category": "conversion", "complexity": "medium"}
+    meta={"category": "conversion", "complexity": "medium"},
+    annotations=ToolAnnotations(
+        requires_confirmation=True
+    )
 )
 async def convert_natural_language(query: Annotated[str, "Natural language conversion request"]) -> dict:
     """Natural language conversion"""
@@ -2243,7 +2264,10 @@ async def analyze_number_theory(
 @mcp.tool(
     title="Create Session",
     tags={"session", "management", "variables", "state"},
-    meta={"category": "session", "complexity": "low"}
+    meta={"category": "session", "complexity": "low"},
+    annotations=ToolAnnotations(
+        destructive=False
+    )
 )
 async def create_session(
     session_id: Annotated[str | None, "Optional session identifier"] = None,
@@ -2268,7 +2292,10 @@ async def create_session(
 @mcp.tool(
     title="Session Calculation",
     tags={"calculation", "session", "variables", "state"},
-    meta={"category": "session-calculation", "complexity": "medium"}
+    meta={"category": "session-calculation", "complexity": "medium"},
+    annotations=ToolAnnotations(
+        idempotent=False
+    )
 )
 async def session_calculate(
     session_id: Annotated[str, "Session identifier"],
@@ -2306,7 +2333,11 @@ async def session_calculate(
 @mcp.tool(
     title="List Session Variables",
     tags={"session", "variables", "management", "inspection"},
-    meta={"category": "session", "complexity": "low"}
+    meta={"category": "session", "complexity": "low"},
+    annotations=ToolAnnotations(
+        idempotent=True,
+        read_only=True
+    )
 )
 async def list_session_variables(session_id: Annotated[str, "Session identifier"]) -> dict:
     """List session variables"""
@@ -2344,7 +2375,11 @@ async def delete_session(session_id: Annotated[str, "Session identifier"]) -> di
 @mcp.tool(
     title="Calculation History",
     tags={"history", "audit", "calculation", "tracking"},
-    meta={"category": "history", "complexity": "low"}
+    meta={"category": "history", "complexity": "low"},
+    annotations=ToolAnnotations(
+        idempotent=True,
+        read_only=True
+    )
 )
 async def get_calculation_history(limit: Annotated[int, "Number of recent calculations to retrieve"] = 10) -> dict:
     """Get calculation history"""
@@ -2399,7 +2434,11 @@ async def clear_history() -> dict:
 @mcp.tool(
     title="Optimize Memory",
     tags={"optimization", "memory", "management", "cleanup"},
-    meta={"category": "optimization", "complexity": "low"}
+    meta={"category": "optimization", "complexity": "low"},
+    annotations=ToolAnnotations(
+        destructive=True,
+        requires_confirmation=True
+    )
 )
 async def optimize_memory() -> dict:
     """Optimize memory"""
@@ -2426,7 +2465,11 @@ async def optimize_memory() -> dict:
 @mcp.tool(
     title="List Functions",
     tags={"discovery", "help", "reference", "documentation"},
-    meta={"category": "discovery", "complexity": "low"}
+    meta={"category": "discovery", "complexity": "low"},
+    annotations=ToolAnnotations(
+        idempotent=True,
+        read_only=True
+    )
 )
 async def list_functions() -> dict:
     """List functions"""
@@ -2466,7 +2509,11 @@ async def list_functions() -> dict:
     description="Returns the 20 most recent mathematical calculations with their results and timestamps",
     mime_type="text/plain",
     tags={"history", "audit", "calculations", "recent"},
-    meta={"category": "history", "max_entries": 20, "format": "text"}
+    meta={"category": "history", "max_entries": 20, "format": "text"},
+    annotations={
+        "readOnlyHint": True,
+        "idempotentHint": True
+    }
 )
 async def get_recent_mathematical_computation_history() -> str:
     history = mathematical_calculation_history.get_recent(20)
@@ -2485,7 +2532,11 @@ async def get_recent_mathematical_computation_history() -> str:
     description="Comprehensive catalog of all available mathematical functions organized by category (trigonometric, hyperbolic, logarithmic, statistical, and other functions)",
     mime_type="text/plain",
     tags={"functions", "reference", "documentation", "catalog"},
-    meta={"category": "reference", "includes": ["trigonometric", "hyperbolic", "logarithmic", "statistical", "other"]}
+    meta={"category": "reference", "includes": ["trigonometric", "hyperbolic", "logarithmic", "statistical", "other"]},
+    annotations={
+        "readOnlyHint": True,
+        "idempotentHint": True
+    }
 )
 async def get_available_mathematical_functions_catalog() -> str:
     lines = ["Available Mathematical Functions:"]
@@ -2543,7 +2594,11 @@ async def get_available_mathematical_functions_catalog() -> str:
     description="Complete catalog of mathematical constants including pi, e, golden ratio, and other fundamental constants with their precise values",
     mime_type="text/plain",
     tags={"constants", "reference", "mathematics", "values"},
-    meta={"category": "reference", "precision": "high", "includes_constants": list(MATH_CONSTANTS.keys())[:10]}
+    meta={"category": "reference", "precision": "high", "includes_constants": list(MATH_CONSTANTS.keys())[:10]},
+    annotations={
+        "readOnlyHint": True,
+        "idempotentHint": True
+    }
 )
 async def get_comprehensive_mathematical_constants_catalog() -> str:
     lines = ["Mathematical Constants:"]
