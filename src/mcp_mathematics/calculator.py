@@ -15,6 +15,7 @@ from threading import RLock
 from typing import Annotated, Any
 
 from fastmcp import Context, FastMCP
+from mcp.types import ToolAnnotations
 
 
 @dataclass
@@ -1742,12 +1743,13 @@ _active_mathematical_computations = 0
 mcp = FastMCP("MCP Mathematics")
 
 
-@mcp.tool()
-async def perf() -> str:
+@mcp.tool(
+    title="Performance Metrics",
+    tags={"monitoring", "performance", "metrics", "system"},
+    meta={"category": "monitoring", "complexity": "low"}
+)
+async def get_performance_metrics() -> dict:
     """Get performance metrics"""
-    metrics = ["MCP Mathematics System Metrics:"]
-    metrics.append("=" * 40)
-
     with _computation_metrics_lock:
         stats_values = []
         for i in range(_get_computation_stats().size()):
@@ -1765,139 +1767,179 @@ async def perf() -> str:
         total_time = sum(stats["total_time"] for stats in stats_values)
         avg_time = total_time / total_computations if total_computations > 0 else 0
 
-    metrics.append(f"Total Computations: {total_computations}")
-    metrics.append(f"Average Computation Time: {avg_time:.3f}s")
-    metrics.append(f"Active Computations: {_active_mathematical_computations}")
-
     with _rate_limiting_lock:
         active_clients = len(mathematical_computation_rate_limiter.requests)
         total_requests = sum(
             len(reqs) for reqs in mathematical_computation_rate_limiter.requests.values()
         )
 
-    metrics.append(f"Active Clients: {active_clients}")
-    metrics.append(f"Total Requests (current window): {total_requests}")
-
     history_size = len(mathematical_calculation_history.history)
-    metrics.append(f"History Entries: {history_size}/{CALCULATION_HISTORY_ENTRY_LIMIT}")
-
     cache_size = _get_expression_cache().size()
     ast_cache_size = _get_parsed_cache().size()
-    metrics.append(f"Expression Cache: {cache_size}/{MAXIMUM_CACHE_SIZE}")
-    metrics.append(f"AST Cache: {ast_cache_size}/{MAXIMUM_CACHE_SIZE}")
-
     session_stats = _get_session_manager().get_stats()
-    metrics.append(
-        f"Active Sessions: {session_stats['active_sessions']}/{session_stats['max_sessions']}"
-    )
 
-    metrics.append(
-        f"Security Monitoring: {'Enabled' if SECURITY_AUDIT_LOGGING_ENABLED else 'Disabled'}"
-    )
-    metrics.append(f"Rate Limiting: {'Enabled' if ENABLE_RATE_LIMITING else 'Disabled'}")
+    return {
+        "computations": {
+            "total": total_computations,
+            "average_time": round(avg_time, 3),
+            "active": _active_mathematical_computations
+        },
+        "rate_limiting": {
+            "active_clients": active_clients,
+            "total_requests": total_requests
+        },
+        "cache": {
+            "expression_cache": cache_size,
+            "ast_cache": ast_cache_size,
+            "max_size": MAXIMUM_CACHE_SIZE
+        },
+        "sessions": {
+            "active": session_stats['active_sessions'],
+            "max": session_stats['max_sessions']
+        },
+        "history": {
+            "entries": history_size,
+            "max": CALCULATION_HISTORY_ENTRY_LIMIT
+        },
+        "configuration": {
+            "max_expression_length": MAXIMUM_MATHEMATICAL_EXPRESSION_CHARACTER_LIMIT,
+            "max_ast_depth": MAXIMUM_AST_NODE_DEPTH_LIMIT,
+            "max_computation_time": MAXIMUM_COMPUTATION_DURATION_SECONDS,
+            "computation_timeout": MATHEMATICAL_OPERATION_TIMEOUT_SECONDS,
+            "memory_limit_mb": MAXIMUM_MEMORY_USAGE_MEGABYTES,
+            "available_functions": len(ALL_FUNCTIONS)
+        },
+        "features": {
+            "security_monitoring": SECURITY_AUDIT_LOGGING_ENABLED,
+            "rate_limiting": ENABLE_RATE_LIMITING
+        }
+    }
 
-    metrics.append("\\nConfiguration:")
-    metrics.append(f"  Max Expression Length: {MAXIMUM_MATHEMATICAL_EXPRESSION_CHARACTER_LIMIT}")
-    metrics.append(f"  Max Expression Depth: {MAXIMUM_AST_NODE_DEPTH_LIMIT}")
-    metrics.append(f"  Max Computation Time: {MAXIMUM_COMPUTATION_DURATION_SECONDS}s")
-    metrics.append(f"  Computation Timeout: {MATHEMATICAL_OPERATION_TIMEOUT_SECONDS}s")
-    metrics.append(f"  Memory Limit: {MAXIMUM_MEMORY_USAGE_MEGABYTES}MB")
-    metrics.append(f"  Available Functions: {len(ALL_FUNCTIONS)}")
 
-    return "\\n".join(metrics)
-
-
-@mcp.tool()
-async def sec() -> str:
+@mcp.tool(
+    title="Security Status",
+    tags={"security", "monitoring", "audit", "system"},
+    meta={"category": "security", "complexity": "low"}
+)
+async def get_security_status() -> dict:
     """Get security status"""
-    security_info = ["MCP Mathematics Security Status:"]
-    security_info.append("=" * 35)
-
-    security_info.append("Rate Limiting:")
-    security_info.append(f"  Status: {'Enabled' if ENABLE_RATE_LIMITING else 'Disabled'}")
-    security_info.append(f"  Window: {RATE_LIMIT_WINDOW}s")
-    security_info.append(f"  Max Requests: {MAXIMUM_CLIENT_REQUESTS_PER_TIME_WINDOW}")
-
     with _rate_limiting_lock:
-        security_info.append(
-            f"  Active Clients: {len(mathematical_computation_rate_limiter.requests)}"
-        )
+        active_clients = len(mathematical_computation_rate_limiter.requests)
 
-    security_info.append("\\nThreat Detection:")
-    security_info.append(f"  Forbidden Patterns: {len(FORBIDDEN_PATTERNS)}")
-    security_info.append(f"  Input Hashing: {'Enabled' if ENABLE_INPUT_HASHING else 'Disabled'}")
-    security_info.append(f"  Timeout Protection: {MATHEMATICAL_OPERATION_TIMEOUT_SECONDS}s")
-    security_info.append(f"  Memory Protection: {MAXIMUM_MEMORY_USAGE_MEGABYTES}MB")
+    return {
+        "rate_limiting": {
+            "enabled": ENABLE_RATE_LIMITING,
+            "window_seconds": RATE_LIMIT_WINDOW,
+            "max_requests": MAXIMUM_CLIENT_REQUESTS_PER_TIME_WINDOW,
+            "active_clients": active_clients
+        },
+        "threat_detection": {
+            "forbidden_patterns_count": len(FORBIDDEN_PATTERNS),
+            "input_hashing_enabled": ENABLE_INPUT_HASHING,
+            "timeout_protection_seconds": MATHEMATICAL_OPERATION_TIMEOUT_SECONDS,
+            "memory_protection_mb": MAXIMUM_MEMORY_USAGE_MEGABYTES
+        },
+        "audit_configuration": {
+            "audit_logging_enabled": SECURITY_AUDIT_LOGGING_ENABLED,
+            "security_logger_active": True,
+            "async_logging_enabled": True
+        },
+        "resource_limits": {
+            "max_factorial": FACTORIAL_COMPUTATION_UPPER_BOUND,
+            "max_power_exponent": EXPONENTIATION_SAFETY_THRESHOLD,
+            "max_result_length": MAXIMUM_COMPUTATION_RESULT_CHARACTER_LIMIT,
+            "max_list_size": MAXIMUM_LIST_ELEMENT_COUNT_LIMIT
+        }
+    }
 
-    security_info.append("\\nAudit Configuration:")
-    security_info.append(
-        f"  Audit Logging: {'Enabled' if SECURITY_AUDIT_LOGGING_ENABLED else 'Disabled'}"
-    )
-    security_info.append("  Security Logger: Active")
-    security_info.append("  Async Logging: Enabled")
 
-    security_info.append("\\nResource Limits:")
-    security_info.append(f"  Max Factorial: {FACTORIAL_COMPUTATION_UPPER_BOUND}")
-    security_info.append(f"  Max Power Exponent: {EXPONENTIATION_SAFETY_THRESHOLD}")
-    security_info.append(f"  Max Result Length: {MAXIMUM_COMPUTATION_RESULT_CHARACTER_LIMIT}")
-    security_info.append(f"  Max List Size: {MAXIMUM_LIST_ELEMENT_COUNT_LIMIT}")
-
-    return "\\n".join(security_info)
-
-
-@mcp.tool()
-async def mem() -> str:
+@mcp.tool(
+    title="Memory Statistics",
+    tags={"monitoring", "memory", "performance", "system"},
+    meta={"category": "monitoring", "complexity": "low"}
+)
+async def get_memory_statistics() -> dict:
     """Get memory statistics"""
     try:
         stats = get_memory_usage_stats()
-        lines = ["MCP Mathematics Memory Usage:"]
-        lines.append("=" * 30)
-        lines.append(f"Process Memory: {stats['process_memory_mb']} MB")
-        lines.append(f"Virtual Memory: {stats['virtual_memory_mb']} MB")
-        lines.append("\\nCache Usage:")
-        lines.append(f"  Expression Cache: {stats['expression_cache_size']}/{MAXIMUM_CACHE_SIZE}")
-        lines.append(f"  AST Cache: {stats['ast_cache_size']}/{MAXIMUM_CACHE_SIZE}")
-        lines.append(
-            f"  Computation Stats: {stats['computation_stats_size']}/{MAXIMUM_COMPUTATION_STATISTICS}"
-        )
-        lines.append("\\nSession Management:")
-        lines.append(f"  Active Sessions: {stats['active_sessions']}/{MAXIMUM_SESSIONS}")
-        lines.append("\\nOther Components:")
-        lines.append(f"  Rate Limiter Clients: {stats['rate_limiter_clients']}")
-        lines.append(
-            f"  History Entries: {stats['history_entries']}/{CALCULATION_HISTORY_ENTRY_LIMIT}"
-        )
-        return "\\n".join(lines)
+        return {
+            "process_memory": {
+                "process_memory_mb": stats['process_memory_mb'],
+                "virtual_memory_mb": stats['virtual_memory_mb']
+            },
+            "cache_usage": {
+                "expression_cache": {
+                    "size": stats['expression_cache_size'],
+                    "max": MAXIMUM_CACHE_SIZE
+                },
+                "ast_cache": {
+                    "size": stats['ast_cache_size'],
+                    "max": MAXIMUM_CACHE_SIZE
+                },
+                "computation_stats": {
+                    "size": stats['computation_stats_size'],
+                    "max": MAXIMUM_COMPUTATION_STATISTICS
+                }
+            },
+            "session_management": {
+                "active_sessions": stats['active_sessions'],
+                "max_sessions": MAXIMUM_SESSIONS
+            },
+            "other_components": {
+                "rate_limiter_clients": stats['rate_limiter_clients'],
+                "history_entries": {
+                    "count": stats['history_entries'],
+                    "max": CALCULATION_HISTORY_ENTRY_LIMIT
+                }
+            }
+        }
     except ImportError:
-        return "Error: psutil package is required for memory monitoring"
+        return {"success": False, "error": "psutil package is required for memory monitoring"}
     except Exception as e:
-        return f"Error getting memory usage: {str(e)}"
+        return {"success": False, "error": f"Error getting memory usage: {str(e)}"}
 
 
-@mcp.tool()
-async def calc(expr: Annotated[str, "Mathematical expression to evaluate"]) -> str:
+@mcp.tool(
+    title="Calculate Expression",
+    tags={"calculation", "basic", "math", "expression"},
+    meta={"category": "calculation", "complexity": "medium"}
+)
+async def calculate_expression(expr: Annotated[str, "Mathematical expression to evaluate"]) -> dict:
     """Evaluate math expression"""
     global _active_mathematical_computations
 
     if _shutdown_requested:
-        return "Error: Server is shutting down and cannot accept new requests"
+        return {"success": False, "error": "Server is shutting down and cannot accept new requests"}
 
     _active_mathematical_computations += 1
 
     try:
         result = compute_expression(expr)
-        return result.to_string()
+        return {
+            "success": result.success,
+            "expression": expr,
+            "result": result.result if result.success else None,
+            "error": result.error if not result.success else None
+        }
     except Exception as ex:
-        return f"Error: {str(ex)}"
+        return {"success": False, "error": str(ex)}
     finally:
         _active_mathematical_computations -= 1
 
 
-@mcp.tool()
-async def batch(
+@mcp.tool(
+    title="Batch Calculate",
+    tags={"calculation", "batch", "multiple", "expressions"},
+    meta={"category": "calculation", "complexity": "medium"},
+    annotations=ToolAnnotations(
+        progress_tracking=True,
+        long_running=True
+    )
+)
+async def batch_calculate(
     expressions: Annotated[list[str], "List of mathematical expressions to evaluate"],
     c: Context
-) -> str:
+) -> dict:
     """Batch calculate expressions"""
     results = []
     total_expressions = len(expressions)
@@ -1907,19 +1949,33 @@ async def batch(
         await c.report_progress(progress=progress_percent, total=100)
 
         result = compute_expression(expr)
-        if result.success:
-            results.append(f"{expr} = {result.result}")
-        else:
-            results.append(f"{expr} = Error: {result.error['message']}")
-    return "\\n".join(results)
+        results.append({
+            "expression": expr,
+            "success": result.success,
+            "result": result.result if result.success else None,
+            "error": result.error['message'] if not result.success else None
+        })
+
+    return {
+        "total_expressions": total_expressions,
+        "results": results
+    }
 
 
-@mcp.tool()
-async def stat(
+@mcp.tool(
+    title="Statistical Analysis",
+    tags={"statistics", "calculation", "analysis", "data"},
+    meta={"category": "statistics", "complexity": "medium"},
+    annotations=ToolAnnotations(
+        progress_tracking=True,
+        requires_confirmation=False
+    )
+)
+async def calculate_statistics(
     data: Annotated[list[float], "List of numbers to analyze"],
     operation: Annotated[str, "Statistical operation (mean, median, mode, stdev, etc.)"],
     c: Context
-) -> str:
+) -> dict:
     """Calculate statistics"""
     try:
         if operation not in STATISTICS_FUNCTIONS:
@@ -1932,9 +1988,9 @@ async def stat(
                 operation = elicit_result.data.statistical_operation_type
                 if operation not in STATISTICS_FUNCTIONS:
                     valid_ops = ", ".join(sorted(STATISTICS_FUNCTIONS.keys()))
-                    return f"Error: Invalid operation selection '{operation}'. Valid options are: {valid_ops}"
+                    return {"success": False, "error": f"Invalid operation selection '{operation}'", "valid_options": sorted(STATISTICS_FUNCTIONS.keys())}
             else:
-                return "Operation cancelled by user"
+                return {"success": False, "error": "Operation cancelled by user"}
 
         await c.report_progress(progress=25, total=100)
         func = STATISTICS_FUNCTIONS[operation]
@@ -1942,44 +1998,57 @@ async def stat(
         result = func(data)
         await c.report_progress(progress=100, total=100)
 
-        return f"Result: {result}"
+        return {
+            "success": True,
+            "operation": operation,
+            "data_count": len(data),
+            "result": result
+        }
     except statistics.StatisticsError as e:
-        return f"Error: {str(e)}"
+        return {"success": False, "error": "statistics_error", "message": str(e)}
     except Exception as e:
-        return f"Error: {str(e)}"
+        return {"success": False, "error": "unexpected_error", "message": str(e)}
 
 
-@mcp.tool()
-async def mat(
+@mcp.tool(
+    title="Matrix Operations",
+    tags={"matrix", "linear-algebra", "advanced", "math"},
+    meta={"category": "matrix", "complexity": "high"},
+    annotations=ToolAnnotations(
+        progress_tracking=True,
+        destructive=False
+    )
+)
+async def matrix_operation(
     matrices: Annotated[list[list[list[float]]], "List of matrices for operation"],
     operation: Annotated[str, "Matrix operation (multiply, determinant, inverse)"],
     c: Context
-) -> str:
+) -> dict:
     """Matrix operations"""
     try:
         if operation == "multiply":
             if len(matrices) != 2:
-                return "Error: Matrix multiplication requires exactly 2 matrices"
+                return {"success": False, "error": "Matrix multiplication requires exactly 2 matrices", "required_matrices": 2, "provided": len(matrices)}
             await c.report_progress(progress=25, total=100)
             result = matrix_multiply(matrices[0], matrices[1])
             await c.report_progress(progress=100, total=100)
-            return f"Result: {result}"
+            return {"success": True, "operation": "multiply", "result": result}
 
         elif operation == "determinant":
             if len(matrices) != 1:
-                return "Error: Determinant requires exactly 1 matrix"
+                return {"success": False, "error": "Determinant requires exactly 1 matrix", "required_matrices": 1, "provided": len(matrices)}
             await c.report_progress(progress=50, total=100)
             result = matrix_determinant(matrices[0])
             await c.report_progress(progress=100, total=100)
-            return f"Result: {result}"
+            return {"success": True, "operation": "determinant", "result": result}
 
         elif operation == "inverse":
             if len(matrices) != 1:
-                return "Error: Inverse requires exactly 1 matrix"
+                return {"success": False, "error": "Inverse requires exactly 1 matrix", "required_matrices": 1, "provided": len(matrices)}
             await c.report_progress(progress=40, total=100)
             result = matrix_inverse(matrices[0])
             await c.report_progress(progress=100, total=100)
-            return f"Result: {result}"
+            return {"success": True, "operation": "inverse", "result": result}
 
         else:
             elicit_result = await c.elicit(
@@ -1991,131 +2060,148 @@ async def mat(
                 operation = elicit_result.data.matrix_operation_type
                 if operation == "multiply":
                     if len(matrices) != 2:
-                        return "Error: Matrix multiplication requires exactly 2 matrices"
+                        return {"success": False, "error": "Matrix multiplication requires exactly 2 matrices", "required_matrices": 2, "provided": len(matrices)}
                     await c.report_progress(progress=25, total=100)
                     result_matrix = matrix_multiply(matrices[0], matrices[1])
                     await c.report_progress(progress=100, total=100)
-                    return f"Result: {result_matrix}"
+                    return {"success": True, "operation": "multiply", "result": result_matrix}
                 elif operation == "determinant":
                     if len(matrices) != 1:
-                        return "Error: Determinant requires exactly 1 matrix"
+                        return {"success": False, "error": "Determinant requires exactly 1 matrix", "required_matrices": 1, "provided": len(matrices)}
                     await c.report_progress(progress=50, total=100)
                     result_det = matrix_determinant(matrices[0])
                     await c.report_progress(progress=100, total=100)
-                    return f"Result: {result_det}"
+                    return {"success": True, "operation": "determinant", "result": result_det}
                 elif operation == "inverse":
                     if len(matrices) != 1:
-                        return "Error: Inverse requires exactly 1 matrix"
+                        return {"success": False, "error": "Inverse requires exactly 1 matrix", "required_matrices": 1, "provided": len(matrices)}
                     await c.report_progress(progress=40, total=100)
                     result_inv = matrix_inverse(matrices[0])
                     await c.report_progress(progress=100, total=100)
-                    return f"Result: {result_inv}"
+                    return {"success": True, "operation": "inverse", "result": result_inv}
                 else:
-                    return f"Error: Invalid operation selection '{operation}'. Valid options are: multiply, determinant, inverse"
+                    return {"success": False, "error": "Invalid operation selection", "operation": operation, "valid_options": ["multiply", "determinant", "inverse"]}
             else:
-                return "Operation cancelled by user"
+                return {"success": False, "error": "Operation cancelled by user"}
 
     except Exception as e:
-        return f"Error: {str(e)}"
+        return {"success": False, "error": "unexpected_error", "message": str(e)}
 
 
-@mcp.tool()
-async def conv(
+@mcp.tool(
+    title="Unit Conversion",
+    tags={"conversion", "units", "measurement"},
+    meta={"category": "conversion", "complexity": "low"}
+)
+async def convert_units(
     value: Annotated[float, "Numeric value to convert"],
     from_unit: Annotated[str, "Source unit"],
     to_unit: Annotated[str, "Target unit"],
     unit_type: Annotated[str, "Unit category (length, mass, time, temperature, etc.)"]
-) -> str:
+) -> dict:
     """Unit conversion"""
     try:
         from_unit_resolved = resolve_unit_alias(from_unit)
         to_unit_resolved = resolve_unit_alias(to_unit)
         result = convert_unit(value, from_unit_resolved, to_unit_resolved, unit_type)
-        return f"Result: {value} {from_unit} = {result} {to_unit}"
+        return {
+            "success": True,
+            "input_value": value,
+            "input_unit": from_unit,
+            "output_value": result,
+            "output_unit": to_unit,
+            "unit_type": unit_type,
+            "resolved_input_unit": from_unit_resolved,
+            "resolved_output_unit": to_unit_resolved
+        }
     except Exception as e:
-        return f"Error: {str(e)}"
+        return {"success": False, "error": "conversion_failed", "message": str(e)}
 
 
-@mcp.tool()
-async def nlc(query: Annotated[str, "Natural language conversion request"]) -> str:
+@mcp.tool(
+    title="Natural Language Conversion",
+    tags={"conversion", "natural-language", "units", "nlp"},
+    meta={"category": "conversion", "complexity": "medium"}
+)
+async def convert_natural_language(query: Annotated[str, "Natural language conversion request"]) -> dict:
     """Natural language conversion"""
-    import json
-
     try:
         parsed = parse_natural_language_conversion(query)
         if not parsed:
-            return json.dumps(
-                {
-                    "success": False,
-                    "error": "parse_failed",
-                    "query": query,
-                    "supported_patterns": [
-                        "convert X unit to unit",
-                        "what is X unit in unit",
-                        "X unit -> unit",
-                        "X unit equals how many unit",
-                        "from X unit to unit",
-                    ],
-                }
-            )
+            return {
+                "success": False,
+                "error": "parse_failed",
+                "query": query,
+                "supported_patterns": [
+                    "convert X unit to unit",
+                    "what is X unit in unit",
+                    "X unit -> unit",
+                    "X unit equals how many unit",
+                    "from X unit to unit",
+                ],
+            }
 
         value, from_unit, to_unit, unit_type = parsed
         from_unit_resolved = resolve_unit_alias(from_unit)
         to_unit_resolved = resolve_unit_alias(to_unit)
         result = convert_unit(value, from_unit_resolved, to_unit_resolved, unit_type)
 
-        return json.dumps(
-            {
-                "success": True,
-                "conversion": {
-                    "original_query": query,
-                    "input_value": value,
-                    "input_unit": from_unit,
-                    "output_value": result,
-                    "output_unit": to_unit,
-                    "unit_type": unit_type,
-                    "resolved_input_unit": from_unit_resolved,
-                    "resolved_output_unit": to_unit_resolved,
-                },
-            }
-        )
+        return {
+            "success": True,
+            "conversion": {
+                "original_query": query,
+                "input_value": value,
+                "input_unit": from_unit,
+                "output_value": result,
+                "output_unit": to_unit,
+                "unit_type": unit_type,
+                "resolved_input_unit": from_unit_resolved,
+                "resolved_output_unit": to_unit_resolved,
+            },
+        }
     except Exception as e:
-        return json.dumps(
-            {"success": False, "error": "conversion_failed", "details": str(e), "query": query}
-        )
+        return {"success": False, "error": "conversion_failed", "details": str(e), "query": query}
 
 
-@mcp.tool()
-async def num(
+@mcp.tool(
+    title="Number Theory",
+    tags={"number-theory", "advanced", "math", "primes"},
+    meta={"category": "number-theory", "complexity": "high"},
+    annotations=ToolAnnotations(
+        progress_tracking=True,
+        long_running=True
+    )
+)
+async def analyze_number_theory(
     number: Annotated[int, "Integer to analyze"],
     operation: Annotated[str, "Number theory operation (is_prime, prime_factors, divisors, totient)"],
     c: Context
-) -> str:
+) -> dict:
     """Number theory operations"""
     try:
         if operation == "is_prime":
             await c.report_progress(progress=50, total=100)
             result = is_prime(number)
             await c.report_progress(progress=100, total=100)
-            return f"Result: {number} is {'prime' if result else 'not prime'}"
+            return {"success": True, "operation": "is_prime", "number": number, "result": result, "is_prime": result}
 
         elif operation == "prime_factors":
             await c.report_progress(progress=25, total=100)
             result = prime_factors(number)
             await c.report_progress(progress=100, total=100)
-            return f"Result: Prime factors of {number} = {result}"
+            return {"success": True, "operation": "prime_factors", "number": number, "factors": result}
 
         elif operation == "divisors":
             await c.report_progress(progress=30, total=100)
             divisors = [i for i in range(1, number + 1) if number % i == 0]
             await c.report_progress(progress=100, total=100)
-            return f"Result: Divisors of {number} = {divisors}"
+            return {"success": True, "operation": "divisors", "number": number, "divisors": divisors, "count": len(divisors)}
 
         elif operation == "totient":
             await c.report_progress(progress=35, total=100)
             result = sum(1 for i in range(1, number) if math.gcd(i, number) == 1)
             await c.report_progress(progress=100, total=100)
-            return f"Result: Euler's totient of {number} = {result}"
+            return {"success": True, "operation": "totient", "number": number, "result": result}
 
         else:
             elicit_result = await c.elicit(
@@ -2129,58 +2215,71 @@ async def num(
                     await c.report_progress(progress=50, total=100)
                     result = is_prime(number)
                     await c.report_progress(progress=100, total=100)
-                    return f"Result: {number} is {'prime' if result else 'not prime'}"
+                    return {"success": True, "operation": "is_prime", "number": number, "result": result, "is_prime": result}
                 elif operation == "prime_factors":
                     await c.report_progress(progress=25, total=100)
                     result = prime_factors(number)
                     await c.report_progress(progress=100, total=100)
-                    return f"Result: Prime factors of {number} = {result}"
+                    return {"success": True, "operation": "prime_factors", "number": number, "factors": result}
                 elif operation == "divisors":
                     await c.report_progress(progress=30, total=100)
                     divisors = [i for i in range(1, number + 1) if number % i == 0]
                     await c.report_progress(progress=100, total=100)
-                    return f"Result: Divisors of {number} = {divisors}"
+                    return {"success": True, "operation": "divisors", "number": number, "divisors": divisors, "count": len(divisors)}
                 elif operation == "totient":
                     await c.report_progress(progress=35, total=100)
                     result = sum(1 for i in range(1, number) if math.gcd(i, number) == 1)
                     await c.report_progress(progress=100, total=100)
-                    return f"Result: Euler's totient of {number} = {result}"
+                    return {"success": True, "operation": "totient", "number": number, "result": result}
                 else:
-                    return f"Error: Invalid operation selection '{operation}'. Valid options are: is_prime, prime_factors, divisors, totient"
+                    return {"success": False, "error": "Invalid operation selection", "operation": operation, "valid_options": ["is_prime", "prime_factors", "divisors", "totient"]}
             else:
-                return "Operation cancelled by user"
+                return {"success": False, "error": "Operation cancelled by user"}
 
     except Exception as e:
-        return f"Error: {str(e)}"
+        return {"success": False, "error": "unexpected_error", "message": str(e)}
 
 
-@mcp.tool()
-async def sess(
+@mcp.tool(
+    title="Create Session",
+    tags={"session", "management", "variables", "state"},
+    meta={"category": "session", "complexity": "low"}
+)
+async def create_session(
     session_id: Annotated[str | None, "Optional session identifier"] = None,
     variables: Annotated[dict[str, float] | None, "Initial session variables"] = None
-) -> str:
+) -> dict:
     """Create session"""
     try:
         if not session_id:
             session_id = f"session_{int(time.time() * 1000)}"
 
         _get_session_manager().create_session(session_id, variables)
-        return f"Session created: {session_id}"
+        return {
+            "success": True,
+            "session_id": session_id,
+            "initial_variables": variables or {},
+            "variable_count": len(variables) if variables else 0
+        }
     except Exception as e:
-        return f"Error: {str(e)}"
+        return {"success": False, "error": "session_creation_failed", "message": str(e)}
 
 
-@mcp.tool()
-async def sc(
+@mcp.tool(
+    title="Session Calculation",
+    tags={"calculation", "session", "variables", "state"},
+    meta={"category": "session-calculation", "complexity": "medium"}
+)
+async def session_calculate(
     session_id: Annotated[str, "Session identifier"],
     expr: Annotated[str, "Mathematical expression to evaluate"],
     var_name: Annotated[str | None, "Variable name to store result"] = None
-) -> str:
+) -> dict:
     """Session calculation"""
     global _active_mathematical_computations
 
     if _shutdown_requested:
-        return "Error: Server is shutting down"
+        return {"success": False, "error": "Server is shutting down and cannot accept new requests"}
 
     _active_mathematical_computations += 1
 
@@ -2190,111 +2289,185 @@ async def sc(
         if result.success and var_name:
             _get_session_manager().update_session(session_id, var_name, result.result)
 
-        return result.to_string()
+        return {
+            "success": result.success,
+            "session_id": session_id,
+            "expression": expr,
+            "result": result.result if result.success else None,
+            "error": result.error if not result.success else None,
+            "variable_stored": var_name if (result.success and var_name) else None
+        }
     except Exception as e:
-        return f"Error: {str(e)}"
+        return {"success": False, "error": "unexpected_error", "message": str(e)}
     finally:
         _active_mathematical_computations -= 1
 
 
-@mcp.tool()
-async def lsv(session_id: Annotated[str, "Session identifier"]) -> str:
+@mcp.tool(
+    title="List Session Variables",
+    tags={"session", "variables", "management", "inspection"},
+    meta={"category": "session", "complexity": "low"}
+)
+async def list_session_variables(session_id: Annotated[str, "Session identifier"]) -> dict:
     """List session variables"""
     variables = _get_session_manager().get_session(session_id)
     if variables is None:
-        return f"Error: Session {session_id} not found"
+        return {"success": False, "error": "Session not found", "session_id": session_id}
 
-    if not variables:
-        return "No variables in session"
-
-    lines = ["Session Variables:"]
-    for name, value in variables.items():
-        lines.append(f"  {name} = {value}")
-
-    return "\\n".join(lines)
+    return {
+        "success": True,
+        "session_id": session_id,
+        "variables": variables,
+        "count": len(variables)
+    }
 
 
-@mcp.tool()
-async def ds(session_id: Annotated[str, "Session identifier"]) -> str:
+@mcp.tool(
+    title="Delete Session",
+    tags={"session", "management", "cleanup"},
+    meta={"category": "session", "complexity": "low"},
+    annotations=ToolAnnotations(
+        destructive=True,
+        requires_confirmation=False
+    )
+)
+async def delete_session(session_id: Annotated[str, "Session identifier"]) -> dict:
     """Delete session"""
-    if _get_session_manager().delete_session(session_id):
-        return f"Session {session_id} deleted"
-    return f"Session {session_id} not found"
+    deleted = _get_session_manager().delete_session(session_id)
+    return {
+        "success": deleted,
+        "session_id": session_id,
+        "message": f"Session {session_id} deleted" if deleted else f"Session {session_id} not found"
+    }
 
 
-@mcp.tool()
-async def hist(limit: Annotated[int, "Number of recent calculations to retrieve"] = 10) -> str:
+@mcp.tool(
+    title="Calculation History",
+    tags={"history", "audit", "calculation", "tracking"},
+    meta={"category": "history", "complexity": "low"}
+)
+async def get_calculation_history(limit: Annotated[int, "Number of recent calculations to retrieve"] = 10) -> dict:
     """Get calculation history"""
+    limit_requested = limit
     if limit > CALCULATION_HISTORY_ENTRY_LIMIT:
         limit = CALCULATION_HISTORY_ENTRY_LIMIT
 
     history = mathematical_calculation_history.get_recent(limit)
     if not history:
-        return "No calculation history available"
+        return {
+            "success": True,
+            "limit_requested": limit_requested,
+            "limit_used": limit,
+            "entries_count": 0,
+            "entries": []
+        }
 
-    lines = ["Recent Calculations:"]
-    for entry in history:
-        lines.append(f"  {entry['expression']} = {entry['result']} ({entry['timestamp']})")
-    return "\\n".join(lines)
+    return {
+        "success": True,
+        "limit_requested": limit_requested,
+        "limit_used": limit,
+        "entries_count": len(history),
+        "entries": [
+            {
+                "expression": entry['expression'],
+                "result": entry['result'],
+                "timestamp": entry['timestamp']
+            }
+            for entry in history
+        ]
+    }
 
 
-@mcp.tool()
-async def clr() -> str:
+@mcp.tool(
+    title="Clear History",
+    tags={"history", "management", "cleanup"},
+    meta={"category": "history", "complexity": "low"},
+    annotations=ToolAnnotations(
+        destructive=True,
+        requires_confirmation=True
+    )
+)
+async def clear_history() -> dict:
     """Clear history"""
     mathematical_calculation_history.clear()
-    return "Calculation history cleared successfully"
+    return {
+        "success": True,
+        "message": "Calculation history cleared successfully"
+    }
 
 
-@mcp.tool()
-async def opt() -> str:
+@mcp.tool(
+    title="Optimize Memory",
+    tags={"optimization", "memory", "management", "cleanup"},
+    meta={"category": "optimization", "complexity": "low"}
+)
+async def optimize_memory() -> dict:
     """Optimize memory"""
     try:
         cleanup_stats = cleanup_expired_cache_entries()
-        lines = ["Memory Cleanup Results:"]
-        lines.append(f"Expression cache expired: {cleanup_stats['expression_cache_expired']}")
-        lines.append(f"Sessions expired: {cleanup_stats['sessions_expired']}")
-        lines.append(f"Rate limiter expired: {cleanup_stats['rate_limiter_expired']}")
         total_cleaned = sum(cleanup_stats.values())
-        lines.append(f"Total items cleaned: {total_cleaned}")
-        return "\\n".join(lines)
+        return {
+            "success": True,
+            "cleanup_stats": {
+                "expression_cache_expired": cleanup_stats['expression_cache_expired'],
+                "sessions_expired": cleanup_stats['sessions_expired'],
+                "rate_limiter_expired": cleanup_stats['rate_limiter_expired']
+            },
+            "total_cleaned": total_cleaned
+        }
     except Exception as e:
-        return f"Error during cleanup: {str(e)}"
+        return {
+            "success": False,
+            "error": "cleanup_failed",
+            "message": str(e)
+        }
 
 
-@mcp.tool()
-async def ls() -> str:
+@mcp.tool(
+    title="List Functions",
+    tags={"discovery", "help", "reference", "documentation"},
+    meta={"category": "discovery", "complexity": "low"}
+)
+async def list_functions() -> dict:
     """List functions"""
-    lines = ["Available Mathematical Functions and Constants:"]
-
-    lines.append("\\nBasic Math Functions:")
     basic_funcs = ["sin", "cos", "tan", "sqrt", "exp", "log", "log10", "log2", "pow", "factorial"]
-    for func in sorted(f for f in MATH_FUNCTIONS if f in basic_funcs):
-        lines.append(f"  {func}")
+    basic_functions = sorted(f for f in MATH_FUNCTIONS if f in basic_funcs)
 
-    lines.append("\\nStatistics Functions:")
-    for func in sorted(STATISTICS_FUNCTIONS.keys()):
-        lines.append(f"  {func}")
+    statistics_functions = sorted(STATISTICS_FUNCTIONS.keys())
+    complex_functions = sorted(COMPLEX_FUNCTIONS.keys())
 
-    lines.append("\\nComplex Number Functions:")
-    for func in sorted(COMPLEX_FUNCTIONS.keys()):
-        lines.append(f"  {func}")
+    constants = {const: MATH_CONSTANTS[const] for const in sorted(MATH_CONSTANTS.keys())}
 
-    lines.append("\\nConstants:")
-    for const in sorted(MATH_CONSTANTS.keys()):
-        lines.append(f"  {const} = {MATH_CONSTANTS[const]}")
+    operators = {
+        "arithmetic": ["+", "-", "*", "/", "//", "%", "**", "×", "÷", "^"],
+        "comparison": ["==", "!=", "<", "<=", ">", ">="]
+    }
 
-    lines.append("\\nOperators:")
-    lines.append("  +, -, *, /, //, %, **, ×, ÷, ^")
-    lines.append("  ==, !=, <, <=, >, >=")
+    unit_types = {
+        unit_type: list(UNIT_CONVERSIONS[unit_type].keys())
+        for unit_type in UNIT_CONVERSIONS
+    }
 
-    lines.append("\\nUnit Types:")
-    for unit_type in UNIT_CONVERSIONS:
-        lines.append(f"  {unit_type}: {', '.join(UNIT_CONVERSIONS[unit_type].keys())}")
+    return {
+        "success": True,
+        "basic_functions": basic_functions,
+        "statistics_functions": statistics_functions,
+        "complex_functions": complex_functions,
+        "constants": constants,
+        "operators": operators,
+        "unit_types": unit_types,
+        "total_functions": len(basic_functions) + len(statistics_functions) + len(complex_functions)
+    }
 
-    return "\\n".join(lines)
 
-
-@mcp.resource("hist://recent")
+@mcp.resource(
+    "resource://history/recent",
+    title="Recent Calculation History",
+    description="Returns the 20 most recent mathematical calculations with their results and timestamps",
+    mime_type="text/plain",
+    tags={"history", "audit", "calculations", "recent"},
+    meta={"category": "history", "max_entries": 20, "format": "text"}
+)
 async def get_recent_mathematical_computation_history() -> str:
     history = mathematical_calculation_history.get_recent(20)
     if not history:
@@ -2306,7 +2479,14 @@ async def get_recent_mathematical_computation_history() -> str:
     return "\\n".join(lines)
 
 
-@mcp.resource("func://all")
+@mcp.resource(
+    "resource://functions/all",
+    title="Mathematical Functions Catalog",
+    description="Comprehensive catalog of all available mathematical functions organized by category (trigonometric, hyperbolic, logarithmic, statistical, and other functions)",
+    mime_type="text/plain",
+    tags={"functions", "reference", "documentation", "catalog"},
+    meta={"category": "reference", "includes": ["trigonometric", "hyperbolic", "logarithmic", "statistical", "other"]}
+)
 async def get_available_mathematical_functions_catalog() -> str:
     lines = ["Available Mathematical Functions:"]
 
@@ -2357,7 +2537,14 @@ async def get_available_mathematical_functions_catalog() -> str:
     return "\\n".join(lines)
 
 
-@mcp.resource("const://math")
+@mcp.resource(
+    "resource://constants/math",
+    title="Mathematical Constants Catalog",
+    description="Complete catalog of mathematical constants including pi, e, golden ratio, and other fundamental constants with their precise values",
+    mime_type="text/plain",
+    tags={"constants", "reference", "mathematics", "values"},
+    meta={"category": "reference", "precision": "high", "includes_constants": list(MATH_CONSTANTS.keys())[:10]}
+)
 async def get_comprehensive_mathematical_constants_catalog() -> str:
     lines = ["Mathematical Constants:"]
     for name, value in MATH_CONSTANTS.items():
@@ -2367,8 +2554,10 @@ async def get_comprehensive_mathematical_constants_catalog() -> str:
 
 @mcp.prompt(
     name="scientific_calculation",
+    title="Scientific Calculation Prompt Generator",
     description="Generate scientific calculation prompt with examples and precision settings",
-    tags={"calculation", "scientific", "mathematics"}
+    tags={"calculation", "scientific", "mathematics"},
+    meta={"category": "calculation", "supports": ["general", "trigonometric", "logarithmic", "statistical"]}
 )
 async def sci_calc(
     calc_type: Annotated[str, "Calculation type (general, trigonometric, logarithmic, statistical)"] = "general",
@@ -2388,8 +2577,10 @@ async def sci_calc(
 
 @mcp.prompt(
     name="batch_calculation",
+    title="Batch Calculation Prompt Generator",
     description="Generate batch calculation prompt with configurable operation types and complexity levels",
-    tags={"calculation", "batch", "multiple"}
+    tags={"calculation", "batch", "multiple"},
+    meta={"category": "calculation", "complexity_levels": ["simple", "medium", "advanced"]}
 )
 async def batch_calc(
     batch_size: Annotated[int, "Number of calculations to process"] = 5,
