@@ -1,6 +1,6 @@
 [project]
 name = "mcp-mathematics"
-version = "2.2.3"
+version = "2.2.4"
 description = "Production-ready MCP server built with FastMCP v2 for comprehensive mathematical operations, providing 52 advanced functions, 158 unit conversions, and enterprise-grade security"
 readme = "README.md"
 requires-python = ">=3.10"
