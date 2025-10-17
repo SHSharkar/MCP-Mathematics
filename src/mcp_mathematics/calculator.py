@@ -1875,7 +1875,7 @@ async def mem() -> str:
 
 
 @mcp.tool()
-async def calc(e: str) -> str:
+async def calc(expr: Annotated[str, "Mathematical expression to evaluate"]) -> str:
     """Evaluate math expression"""
     global _active_mathematical_computations
 
@@ -1885,7 +1885,7 @@ async def calc(e: str) -> str:
     _active_mathematical_computations += 1
 
     try:
-        result = compute_expression(e)
+        result = compute_expression(expr)
         return result.to_string()
     except Exception as ex:
         return f"Error: {str(ex)}"
@@ -1894,12 +1894,15 @@ async def calc(e: str) -> str:
 
 
 @mcp.tool()
-async def batch(e: list[str], c: Context) -> str:
+async def batch(
+    expressions: Annotated[list[str], "List of mathematical expressions to evaluate"],
+    c: Context
+) -> str:
     """Batch calculate expressions"""
     results = []
-    total_expressions = len(e)
+    total_expressions = len(expressions)
 
-    for i, expr in enumerate(e):
+    for i, expr in enumerate(expressions):
         progress_percent = ((i + 1) / total_expressions) * 100
         await c.report_progress(progress=progress_percent, total=100)
 
@@ -1912,27 +1915,31 @@ async def batch(e: list[str], c: Context) -> str:
 
 
 @mcp.tool()
-async def stat(d: list[float], o: str, c: Context) -> str:
+async def stat(
+    data: Annotated[list[float], "List of numbers to analyze"],
+    operation: Annotated[str, "Statistical operation (mean, median, mode, stdev, etc.)"],
+    c: Context
+) -> str:
     """Calculate statistics"""
     try:
-        if o not in STATISTICS_FUNCTIONS:
+        if operation not in STATISTICS_FUNCTIONS:
             elicit_result = await c.elicit(
-                message=f"Unknown operation '{o}'. Please select a statistical operation:",
+                message=f"Unknown operation '{operation}'. Please select a statistical operation:",
                 response_type=StatisticsOperationChoice,
             )
 
             if elicit_result.action == "accept":
-                o = elicit_result.data.statistical_operation_type
-                if o not in STATISTICS_FUNCTIONS:
+                operation = elicit_result.data.statistical_operation_type
+                if operation not in STATISTICS_FUNCTIONS:
                     valid_ops = ", ".join(sorted(STATISTICS_FUNCTIONS.keys()))
-                    return f"Error: Invalid operation selection '{o}'. Valid options are: {valid_ops}"
+                    return f"Error: Invalid operation selection '{operation}'. Valid options are: {valid_ops}"
             else:
                 return "Operation cancelled by user"
 
         await c.report_progress(progress=25, total=100)
-        func = STATISTICS_FUNCTIONS[o]
+        func = STATISTICS_FUNCTIONS[operation]
         await c.report_progress(progress=75, total=100)
-        result = func(d)
+        result = func(data)
         await c.report_progress(progress=100, total=100)
 
         return f"Result: {result}"
@@ -1943,64 +1950,68 @@ async def stat(d: list[float], o: str, c: Context) -> str:
 
 
 @mcp.tool()
-async def mat(m: list[list[list[float]]], o: str, c: Context) -> str:
+async def mat(
+    matrices: Annotated[list[list[list[float]]], "List of matrices for operation"],
+    operation: Annotated[str, "Matrix operation (multiply, determinant, inverse)"],
+    c: Context
+) -> str:
     """Matrix operations"""
     try:
-        if o == "multiply":
-            if len(m) != 2:
+        if operation == "multiply":
+            if len(matrices) != 2:
                 return "Error: Matrix multiplication requires exactly 2 matrices"
             await c.report_progress(progress=25, total=100)
-            result = matrix_multiply(m[0], m[1])
+            result = matrix_multiply(matrices[0], matrices[1])
             await c.report_progress(progress=100, total=100)
             return f"Result: {result}"
 
-        elif o == "determinant":
-            if len(m) != 1:
+        elif operation == "determinant":
+            if len(matrices) != 1:
                 return "Error: Determinant requires exactly 1 matrix"
             await c.report_progress(progress=50, total=100)
-            result = matrix_determinant(m[0])
+            result = matrix_determinant(matrices[0])
             await c.report_progress(progress=100, total=100)
             return f"Result: {result}"
 
-        elif o == "inverse":
-            if len(m) != 1:
+        elif operation == "inverse":
+            if len(matrices) != 1:
                 return "Error: Inverse requires exactly 1 matrix"
             await c.report_progress(progress=40, total=100)
-            result = matrix_inverse(m[0])
+            result = matrix_inverse(matrices[0])
             await c.report_progress(progress=100, total=100)
             return f"Result: {result}"
 
         else:
             elicit_result = await c.elicit(
-                message=f"Unknown operation '{o}'. Please select a matrix operation:",
+                message=f"Unknown operation '{operation}'. Please select a matrix operation:",
                 response_type=MatrixOperationChoice,
             )
 
             if elicit_result.action == "accept":
-                o = elicit_result.data.matrix_operation_type
-                if o == "multiply":
-                    if len(m) != 2:
+                operation = elicit_result.data.matrix_operation_type
+                if operation == "multiply":
+                    if len(matrices) != 2:
                         return "Error: Matrix multiplication requires exactly 2 matrices"
                     await c.report_progress(progress=25, total=100)
-                    result_matrix = matrix_multiply(m[0], m[1])
+                    result_matrix = matrix_multiply(matrices[0], matrices[1])
                     await c.report_progress(progress=100, total=100)
                     return f"Result: {result_matrix}"
-                elif o == "determinant":
-                    if len(m) != 1:
+                elif operation == "determinant":
+                    if len(matrices) != 1:
                         return "Error: Determinant requires exactly 1 matrix"
                     await c.report_progress(progress=50, total=100)
-                    result_det = matrix_determinant(m[0])
+                    result_det = matrix_determinant(matrices[0])
                     await c.report_progress(progress=100, total=100)
                     return f"Result: {result_det}"
-                elif o == "inverse":
-                    if len(m) != 1:
+                elif operation == "inverse":
+                    if len(matrices) != 1:
                         return "Error: Inverse requires exactly 1 matrix"
                     await c.report_progress(progress=40, total=100)
-                    result_inv = matrix_inverse(m[0])
+                    result_inv = matrix_inverse(matrices[0])
                     await c.report_progress(progress=100, total=100)
                     return f"Result: {result_inv}"
                 else:
-                    return f"Error: Invalid operation selection '{o}'. Valid options are: multiply, determinant, inverse"
+                    return f"Error: Invalid operation selection '{operation}'. Valid options are: multiply, determinant, inverse"
             else:
                 return "Operation cancelled by user"
 
@@ -2009,30 +2020,35 @@ async def mat(m: list[list[list[float]]], o: str, c: Context) -> str:
 
 
 @mcp.tool()
-async def conv(v: float, f: str, t: str, u: str) -> str:
+async def conv(
+    value: Annotated[float, "Numeric value to convert"],
+    from_unit: Annotated[str, "Source unit"],
+    to_unit: Annotated[str, "Target unit"],
+    unit_type: Annotated[str, "Unit category (length, mass, time, temperature, etc.)"]
+) -> str:
     """Unit conversion"""
     try:
-        from_unit_resolved = resolve_unit_alias(f)
-        to_unit_resolved = resolve_unit_alias(t)
-        result = convert_unit(v, from_unit_resolved, to_unit_resolved, u)
-        return f"Result: {v} {f} = {result} {t}"
+        from_unit_resolved = resolve_unit_alias(from_unit)
+        to_unit_resolved = resolve_unit_alias(to_unit)
+        result = convert_unit(value, from_unit_resolved, to_unit_resolved, unit_type)
+        return f"Result: {value} {from_unit} = {result} {to_unit}"
     except Exception as e:
         return f"Error: {str(e)}"
 
 
 @mcp.tool()
-async def nlc(q: str) -> str:
+async def nlc(query: Annotated[str, "Natural language conversion request"]) -> str:
     """Natural language conversion"""
     import json
 
     try:
-        parsed = parse_natural_language_conversion(q)
+        parsed = parse_natural_language_conversion(query)
         if not parsed:
             return json.dumps(
                 {
                     "success": False,
                     "error": "parse_failed",
-                    "query": q,
+                    "query": query,
                     "supported_patterns": [
                         "convert X unit to unit",
                         "what is X unit in unit",
@@ -2052,7 +2068,7 @@ async def nlc(q: str) -> str:
             {
                 "success": True,
                 "conversion": {
-                    "original_query": q,
+                    "original_query": query,
                     "input_value": value,
                     "input_unit": from_unit,
                     "output_value": result,
@@ -2065,68 +2081,72 @@ async def nlc(q: str) -> str:
         )
     except Exception as e:
         return json.dumps(
-            {"success": False, "error": "conversion_failed", "details": str(e), "query": q}
+            {"success": False, "error": "conversion_failed", "details": str(e), "query": query}
         )
 
 
 @mcp.tool()
-async def num(n: int, o: str, c: Context) -> str:
+async def num(
+    number: Annotated[int, "Integer to analyze"],
+    operation: Annotated[str, "Number theory operation (is_prime, prime_factors, divisors, totient)"],
+    c: Context
+) -> str:
     """Number theory operations"""
     try:
-        if o == "is_prime":
+        if operation == "is_prime":
             await c.report_progress(progress=50, total=100)
-            result = is_prime(n)
+            result = is_prime(number)
             await c.report_progress(progress=100, total=100)
-            return f"Result: {n} is {'prime' if result else 'not prime'}"
+            return f"Result: {number} is {'prime' if result else 'not prime'}"
 
-        elif o == "prime_factors":
+        elif operation == "prime_factors":
             await c.report_progress(progress=25, total=100)
-            result = prime_factors(n)
+            result = prime_factors(number)
             await c.report_progress(progress=100, total=100)
-            return f"Result: Prime factors of {n} = {result}"
+            return f"Result: Prime factors of {number} = {result}"
 
-        elif o == "divisors":
+        elif operation == "divisors":
             await c.report_progress(progress=30, total=100)
-            divisors = [i for i in range(1, n + 1) if n % i == 0]
+            divisors = [i for i in range(1, number + 1) if number % i == 0]
             await c.report_progress(progress=100, total=100)
-            return f"Result: Divisors of {n} = {divisors}"
+            return f"Result: Divisors of {number} = {divisors}"
 
-        elif o == "totient":
+        elif operation == "totient":
             await c.report_progress(progress=35, total=100)
-            result = sum(1 for i in range(1, n) if math.gcd(i, n) == 1)
+            result = sum(1 for i in range(1, number) if math.gcd(i, number) == 1)
             await c.report_progress(progress=100, total=100)
-            return f"Result: Euler's totient of {n} = {result}"
+            return f"Result: Euler's totient of {number} = {result}"
 
         else:
             elicit_result = await c.elicit(
-                message=f"Unknown operation '{o}'. Please select a number theory operation:",
+                message=f"Unknown operation '{operation}'. Please select a number theory operation:",
                 response_type=NumberTheoryOperationChoice,
             )
 
             if elicit_result.action == "accept":
-                o = elicit_result.data.number_theory_operation_type
-                if o == "is_prime":
+                operation = elicit_result.data.number_theory_operation_type
+                if operation == "is_prime":
                     await c.report_progress(progress=50, total=100)
-                    result = is_prime(n)
+                    result = is_prime(number)
                     await c.report_progress(progress=100, total=100)
-                    return f"Result: {n} is {'prime' if result else 'not prime'}"
-                elif o == "prime_factors":
+                    return f"Result: {number} is {'prime' if result else 'not prime'}"
+                elif operation == "prime_factors":
                     await c.report_progress(progress=25, total=100)
-                    result = prime_factors(n)
+                    result = prime_factors(number)
                     await c.report_progress(progress=100, total=100)
-                    return f"Result: Prime factors of {n} = {result}"
-                elif o == "divisors":
+                    return f"Result: Prime factors of {number} = {result}"
+                elif operation == "divisors":
                     await c.report_progress(progress=30, total=100)
-                    divisors = [i for i in range(1, n + 1) if n % i == 0]
+                    divisors = [i for i in range(1, number + 1) if number % i == 0]
                     await c.report_progress(progress=100, total=100)
-                    return f"Result: Divisors of {n} = {divisors}"
-                elif o == "totient":
+                    return f"Result: Divisors of {number} = {divisors}"
+                elif operation == "totient":
                     await c.report_progress(progress=35, total=100)
-                    result = sum(1 for i in range(1, n) if math.gcd(i, n) == 1)
+                    result = sum(1 for i in range(1, number) if math.gcd(i, number) == 1)
                     await c.report_progress(progress=100, total=100)
-                    return f"Result: Euler's totient of {n} = {result}"
+                    return f"Result: Euler's totient of {number} = {result}"
                 else:
-                    return f"Error: Invalid operation selection '{o}'. Valid options are: is_prime, prime_factors, divisors, totient"
+                    return f"Error: Invalid operation selection '{operation}'. Valid options are: is_prime, prime_factors, divisors, totient"
             else:
                 return "Operation cancelled by user"
 
@@ -2135,20 +2155,27 @@ async def num(n: int, o: str, c: Context) -> str:
 
 
 @mcp.tool()
-async def sess(s: str | None = None, v: dict[str, float] | None = None) -> str:
+async def sess(
+    session_id: Annotated[str | None, "Optional session identifier"] = None,
+    variables: Annotated[dict[str, float] | None, "Initial session variables"] = None
+) -> str:
     """Create session"""
     try:
-        if not s:
-            s = f"session_{int(time.time() * 1000)}"
+        if not session_id:
+            session_id = f"session_{int(time.time() * 1000)}"
 
-        _get_session_manager().create_session(s, v)
-        return f"Session created: {s}"
+        _get_session_manager().create_session(session_id, variables)
+        return f"Session created: {session_id}"
     except Exception as e:
         return f"Error: {str(e)}"
 
 
 @mcp.tool()
-async def sc(s: str, e: str, v: str | None = None) -> str:
+async def sc(
+    session_id: Annotated[str, "Session identifier"],
+    expr: Annotated[str, "Mathematical expression to evaluate"],
+    var_name: Annotated[str | None, "Variable name to store result"] = None
+) -> str:
     """Session calculation"""
     global _active_mathematical_computations
 
@@ -2158,10 +2185,10 @@ async def sc(s: str, e: str, v: str | None = None) -> str:
     _active_mathematical_computations += 1
 
     try:
-        result = compute_expression(e, s)
+        result = compute_expression(expr, session_id)
 
-        if result.success and v:
-            _get_session_manager().update_session(s, v, result.result)
+        if result.success and var_name:
+            _get_session_manager().update_session(session_id, var_name, result.result)
 
         return result.to_string()
     except Exception as e:
@@ -2171,11 +2198,11 @@ async def sc(s: str, e: str, v: str | None = None) -> str:
 
 
 @mcp.tool()
-async def lsv(s: str) -> str:
+async def lsv(session_id: Annotated[str, "Session identifier"]) -> str:
     """List session variables"""
-    variables = _get_session_manager().get_session(s)
+    variables = _get_session_manager().get_session(session_id)
     if variables is None:
-        return f"Error: Session {s} not found"
+        return f"Error: Session {session_id} not found"
 
     if not variables:
         return "No variables in session"
@@ -2188,20 +2215,20 @@ async def lsv(s: str) -> str:
 
 
 @mcp.tool()
-async def ds(s: str) -> str:
+async def ds(session_id: Annotated[str, "Session identifier"]) -> str:
     """Delete session"""
-    if _get_session_manager().delete_session(s):
-        return f"Session {s} deleted"
-    return f"Session {s} not found"
+    if _get_session_manager().delete_session(session_id):
+        return f"Session {session_id} deleted"
+    return f"Session {session_id} not found"
 
 
 @mcp.tool()
-async def hist(l: int = 10) -> str:
+async def hist(limit: Annotated[int, "Number of recent calculations to retrieve"] = 10) -> str:
     """Get calculation history"""
-    if l > CALCULATION_HISTORY_ENTRY_LIMIT:
-        l = CALCULATION_HISTORY_ENTRY_LIMIT
+    if limit > CALCULATION_HISTORY_ENTRY_LIMIT:
+        limit = CALCULATION_HISTORY_ENTRY_LIMIT
 
-    history = mathematical_calculation_history.get_recent(l)
+    history = mathematical_calculation_history.get_recent(limit)
     if not history:
         return "No calculation history available"
 
@@ -2267,7 +2294,7 @@ async def ls() -> str:
     return "\\n".join(lines)
 
 
-@mcp.resource("history://recent")
+@mcp.resource("hist://recent")
 async def get_recent_mathematical_computation_history() -> str:
     history = mathematical_calculation_history.get_recent(20)
     if not history:
@@ -2279,7 +2306,7 @@ async def get_recent_mathematical_computation_history() -> str:
     return "\\n".join(lines)
 
 
-@mcp.resource("functions://available")
+@mcp.resource("func://all")
 async def get_available_mathematical_functions_catalog() -> str:
     lines = ["Available Mathematical Functions:"]
 
@@ -2330,7 +2357,7 @@ async def get_available_mathematical_functions_catalog() -> str:
     return "\\n".join(lines)
 
 
-@mcp.resource("constants://math")
+@mcp.resource("const://math")
 async def get_comprehensive_mathematical_constants_catalog() -> str:
     lines = ["Mathematical Constants:"]
     for name, value in MATH_CONSTANTS.items():
@@ -2338,70 +2365,46 @@ async def get_comprehensive_mathematical_constants_catalog() -> str:
     return "\\n".join(lines)
 
 
-@mcp.prompt()
-async def scientific_calculation(
-    expression_type: Annotated[
-        str, "Type of calculation: general, trigonometric, logarithmic, statistical"
-    ] = "general",
+@mcp.prompt(
+    name="scientific_calculation",
+    description="Generate scientific calculation prompt with examples and precision settings",
+    tags={"calculation", "scientific", "mathematics"}
+)
+async def sci_calc(
+    calc_type: Annotated[str, "Calculation type (general, trigonometric, logarithmic, statistical)"] = "general",
     precision: Annotated[int, "Decimal precision for results"] = 6,
-    include_steps: Annotated[bool, "Include step-by-step solution"] = False,
+    show_steps: Annotated[bool, "Include step-by-step solution"] = False,
 ) -> str:
-    """Generate a customized scientific calculation prompt."""
-    prompts = {
-        "general": f"Calculate the following expression with {precision} decimal places",
-        "trigonometric": f"Solve this trigonometric problem with {precision} precision",
-        "logarithmic": f"Compute this logarithmic expression to {precision} decimals",
-        "statistical": f"Perform statistical analysis with {precision} decimal accuracy",
+    """Generate scientific calculation prompt with customizable parameters for different mathematical operations."""
+    examples = {
+        "general": "2+3, 10-4, 5*6",
+        "trigonometric": "sin(pi/2), cos(0)",
+        "logarithmic": "log(10), exp(1)",
+        "statistical": "mean([1,2,3]), stdev([1,2,3])"
     }
-
-    base_prompt = prompts.get(expression_type, prompts["general"])
-
-    if include_steps:
-        base_prompt += " and show a detailed step-by-step solution"
-
-    base_prompt += ".\n\nExamples:"
-
-    if expression_type == "trigonometric":
-        base_prompt += "\n- sin(pi/2), cos(0), tan(pi/4)\n- asin(0.5), acos(0.5), atan(1)"
-    elif expression_type == "logarithmic":
-        base_prompt += "\n- log(10), log10(100), log2(8)\n- exp(1), exp(2)"
-    elif expression_type == "statistical":
-        base_prompt += "\n- mean([1,2,3,4,5])\n- stdev([1,2,3,4,5])\n- variance([1,2,3,4,5])"
-    else:
-        base_prompt += "\n- Addition: 2 + 3\n- Subtraction: 10 - 4\n- Multiplication: 5 * 6\n- Division: 15 / 3\n- Power: 2 ** 3"
-
-    return base_prompt + "\n\nWhat calculation would you like me to perform?"
+    steps_text = " with step-by-step solution" if show_steps else ""
+    return f"Calculate with {precision} decimal precision{steps_text}. Examples: {examples.get(calc_type, examples['general'])}"
 
 
-@mcp.prompt()
-async def batch_calculation(
+@mcp.prompt(
+    name="batch_calculation",
+    description="Generate batch calculation prompt with configurable operation types and complexity levels",
+    tags={"calculation", "batch", "multiple"}
+)
+async def batch_calc(
     batch_size: Annotated[int, "Number of calculations to process"] = 5,
     operation_types: Annotated[list[str], "Types of operations to include"] = None,
-    complexity: Annotated[str, "Complexity level: simple, medium, advanced"] = "medium",
+    complexity: Annotated[str, "Complexity level (simple, medium, advanced)"] = "medium",
 ) -> str:
-    """Generate a batch calculation prompt with the specified parameters."""
+    """Generate batch calculation prompt for processing multiple mathematical expressions at once."""
     if operation_types is None:
         operation_types = ["arithmetic", "trigonometric"]
-
     examples = {
-        "simple": ["2 + 2", "10 - 4", "5 * 6", "15 / 3", "2 ** 3"],
-        "medium": ["2 + 2", "sin(pi/2)", "sqrt(16) * cos(0)", "factorial(5)", "log10(1000)"],
-        "advanced": [
-            "factorial(20) / factorial(15)",
-            "log2(256) ** sqrt(16)",
-            "mean([1,2,3,4,5]) * stdev([1,2,3,4,5])",
-            "gcd(48, 18) * lcm(12, 15)",
-            "exp(log(10)) + sinh(0)",
-        ],
+        "simple": "2+2, 10-4, 5*6",
+        "medium": "sin(pi/2), sqrt(16), log(10)",
+        "advanced": "factorial(20)/factorial(15), mean([1,2,3])*stdev([1,2,3])"
     }
-
-    example_list = examples.get(complexity, examples["medium"])[:batch_size]
-
-    return f"""Process {batch_size} calculations including {', '.join(operation_types)} operations at {complexity} complexity level.
-
-Examples: {example_list}
-
-What expressions would you like to calculate?"""
+    return f"Process {batch_size} calculations including {', '.join(operation_types)} operations at {complexity} complexity. Examples: {examples.get(complexity, examples['medium'])}"
 
 
 if __name__ == "__main__":
