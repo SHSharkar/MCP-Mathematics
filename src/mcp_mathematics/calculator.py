@@ -1743,8 +1743,8 @@ mcp = FastMCP("MCP Mathematics")
 
 
 @mcp.tool()
-async def get_mathematical_computation_performance_metrics() -> str:
-    """Get comprehensive system performance metrics including computation statistics and uptime."""
+async def perf() -> str:
+    """Get performance metrics"""
     metrics = ["MCP Mathematics System Metrics:"]
     metrics.append("=" * 40)
 
@@ -1808,8 +1808,8 @@ async def get_mathematical_computation_performance_metrics() -> str:
 
 
 @mcp.tool()
-async def get_mathematical_security_audit_report() -> str:
-    """Get the current security status including rate limiting and session information."""
+async def sec() -> str:
+    """Get security status"""
     security_info = ["MCP Mathematics Security Status:"]
     security_info.append("=" * 35)
 
@@ -1846,8 +1846,8 @@ async def get_mathematical_security_audit_report() -> str:
 
 
 @mcp.tool()
-async def get_mathematical_memory_usage_statistics() -> str:
-    """Get detailed memory usage statistics for cache and session management."""
+async def mem() -> str:
+    """Get memory statistics"""
     try:
         stats = get_memory_usage_stats()
         lines = ["MCP Mathematics Memory Usage:"]
@@ -1875,8 +1875,8 @@ async def get_mathematical_memory_usage_statistics() -> str:
 
 
 @mcp.tool()
-async def evaluate_mathematical_expression(expression: str) -> str:
-    """Evaluate a mathematical expression and return the result with automatic history tracking."""
+async def calc(e: str) -> str:
+    """Evaluate math expression"""
     global _active_mathematical_computations
 
     if _shutdown_requested:
@@ -1885,23 +1885,23 @@ async def evaluate_mathematical_expression(expression: str) -> str:
     _active_mathematical_computations += 1
 
     try:
-        result = compute_expression(expression)
+        result = compute_expression(e)
         return result.to_string()
-    except Exception as e:
-        return f"Error: {str(e)}"
+    except Exception as ex:
+        return f"Error: {str(ex)}"
     finally:
         _active_mathematical_computations -= 1
 
 
 @mcp.tool()
-async def evaluate_multiple_mathematical_expressions(expressions: list[str], ctx: Context) -> str:
-    """Process multiple mathematical expressions in a single batch operation."""
+async def batch(e: list[str], c: Context) -> str:
+    """Batch calculate expressions"""
     results = []
-    total_expressions = len(expressions)
+    total_expressions = len(e)
 
-    for i, expr in enumerate(expressions):
+    for i, expr in enumerate(e):
         progress_percent = ((i + 1) / total_expressions) * 100
-        await ctx.report_progress(progress=progress_percent, total=100)
+        await c.report_progress(progress=progress_percent, total=100)
 
         result = compute_expression(expr)
         if result.success:
@@ -1912,28 +1912,28 @@ async def evaluate_multiple_mathematical_expressions(expressions: list[str], ctx
 
 
 @mcp.tool()
-async def compute_statistical_operations(data: list[float], operation: str, ctx: Context) -> str:
-    """Calculate statistical measures for a dataset including mean, median, mode, variance, and standard deviation."""
+async def stat(d: list[float], o: str, c: Context) -> str:
+    """Calculate statistics"""
     try:
-        if operation not in STATISTICS_FUNCTIONS:
-            elicit_result = await ctx.elicit(
-                message=f"Unknown operation '{operation}'. Please select a statistical operation:",
+        if o not in STATISTICS_FUNCTIONS:
+            elicit_result = await c.elicit(
+                message=f"Unknown operation '{o}'. Please select a statistical operation:",
                 response_type=StatisticsOperationChoice,
             )
 
             if elicit_result.action == "accept":
-                operation = elicit_result.data.statistical_operation_type
-                if operation not in STATISTICS_FUNCTIONS:
+                o = elicit_result.data.statistical_operation_type
+                if o not in STATISTICS_FUNCTIONS:
                     valid_ops = ", ".join(sorted(STATISTICS_FUNCTIONS.keys()))
-                    return f"Error: Invalid operation selection '{operation}'. Valid options are: {valid_ops}"
+                    return f"Error: Invalid operation selection '{o}'. Valid options are: {valid_ops}"
             else:
                 return "Operation cancelled by user"
 
-        await ctx.report_progress(progress=25, total=100)
-        func = STATISTICS_FUNCTIONS[operation]
-        await ctx.report_progress(progress=75, total=100)
-        result = func(data)
-        await ctx.report_progress(progress=100, total=100)
+        await c.report_progress(progress=25, total=100)
+        func = STATISTICS_FUNCTIONS[o]
+        await c.report_progress(progress=75, total=100)
+        result = func(d)
+        await c.report_progress(progress=100, total=100)
 
         return f"Result: {result}"
     except statistics.StatisticsError as e:
@@ -1943,66 +1943,64 @@ async def compute_statistical_operations(data: list[float], operation: str, ctx:
 
 
 @mcp.tool()
-async def perform_matrix_mathematical_operations(
-    matrices: list[list[list[float]]], operation: str, ctx: Context
-) -> str:
-    """Perform matrix operations including multiplication, transpose, determinant, and inverse."""
+async def mat(m: list[list[list[float]]], o: str, c: Context) -> str:
+    """Matrix operations"""
     try:
-        if operation == "multiply":
-            if len(matrices) != 2:
+        if o == "multiply":
+            if len(m) != 2:
                 return "Error: Matrix multiplication requires exactly 2 matrices"
-            await ctx.report_progress(progress=25, total=100)
-            result = matrix_multiply(matrices[0], matrices[1])
-            await ctx.report_progress(progress=100, total=100)
+            await c.report_progress(progress=25, total=100)
+            result = matrix_multiply(m[0], m[1])
+            await c.report_progress(progress=100, total=100)
             return f"Result: {result}"
 
-        elif operation == "determinant":
-            if len(matrices) != 1:
+        elif o == "determinant":
+            if len(m) != 1:
                 return "Error: Determinant requires exactly 1 matrix"
-            await ctx.report_progress(progress=50, total=100)
-            result = matrix_determinant(matrices[0])
-            await ctx.report_progress(progress=100, total=100)
+            await c.report_progress(progress=50, total=100)
+            result = matrix_determinant(m[0])
+            await c.report_progress(progress=100, total=100)
             return f"Result: {result}"
 
-        elif operation == "inverse":
-            if len(matrices) != 1:
+        elif o == "inverse":
+            if len(m) != 1:
                 return "Error: Inverse requires exactly 1 matrix"
-            await ctx.report_progress(progress=40, total=100)
-            result = matrix_inverse(matrices[0])
-            await ctx.report_progress(progress=100, total=100)
+            await c.report_progress(progress=40, total=100)
+            result = matrix_inverse(m[0])
+            await c.report_progress(progress=100, total=100)
             return f"Result: {result}"
 
         else:
-            elicit_result = await ctx.elicit(
-                message=f"Unknown operation '{operation}'. Please select a matrix operation:",
+            elicit_result = await c.elicit(
+                message=f"Unknown operation '{o}'. Please select a matrix operation:",
                 response_type=MatrixOperationChoice,
             )
 
             if elicit_result.action == "accept":
-                operation = elicit_result.data.matrix_operation_type
-                if operation == "multiply":
-                    if len(matrices) != 2:
+                o = elicit_result.data.matrix_operation_type
+                if o == "multiply":
+                    if len(m) != 2:
                         return "Error: Matrix multiplication requires exactly 2 matrices"
-                    await ctx.report_progress(progress=25, total=100)
-                    result_matrix = matrix_multiply(matrices[0], matrices[1])
-                    await ctx.report_progress(progress=100, total=100)
+                    await c.report_progress(progress=25, total=100)
+                    result_matrix = matrix_multiply(m[0], m[1])
+                    await c.report_progress(progress=100, total=100)
                     return f"Result: {result_matrix}"
-                elif operation == "determinant":
-                    if len(matrices) != 1:
+                elif o == "determinant":
+                    if len(m) != 1:
                         return "Error: Determinant requires exactly 1 matrix"
-                    await ctx.report_progress(progress=50, total=100)
-                    result_det = matrix_determinant(matrices[0])
-                    await ctx.report_progress(progress=100, total=100)
+                    await c.report_progress(progress=50, total=100)
+                    result_det = matrix_determinant(m[0])
+                    await c.report_progress(progress=100, total=100)
                     return f"Result: {result_det}"
-                elif operation == "inverse":
-                    if len(matrices) != 1:
+                elif o == "inverse":
+                    if len(m) != 1:
                         return "Error: Inverse requires exactly 1 matrix"
-                    await ctx.report_progress(progress=40, total=100)
-                    result_inv = matrix_inverse(matrices[0])
-                    await ctx.report_progress(progress=100, total=100)
+                    await c.report_progress(progress=40, total=100)
+                    result_inv = matrix_inverse(m[0])
+                    await c.report_progress(progress=100, total=100)
                     return f"Result: {result_inv}"
                 else:
-                    return f"Error: Invalid operation selection '{operation}'. Valid options are: multiply, determinant, inverse"
+                    return f"Error: Invalid operation selection '{o}'. Valid options are: multiply, determinant, inverse"
             else:
                 return "Operation cancelled by user"
 
@@ -2011,39 +2009,30 @@ async def perform_matrix_mathematical_operations(
 
 
 @mcp.tool()
-async def convert_between_measurement_units(
-    value: float, from_unit: str, to_unit: str, unit_type: str
-) -> str:
-    """Convert between different units of measurement across 158 supported conversions."""
+async def conv(v: float, f: str, t: str, u: str) -> str:
+    """Unit conversion"""
     try:
-        from_unit_resolved = resolve_unit_alias(from_unit)
-        to_unit_resolved = resolve_unit_alias(to_unit)
-        result = convert_unit(value, from_unit_resolved, to_unit_resolved, unit_type)
-        return f"Result: {value} {from_unit} = {result} {to_unit}"
+        from_unit_resolved = resolve_unit_alias(f)
+        to_unit_resolved = resolve_unit_alias(t)
+        result = convert_unit(v, from_unit_resolved, to_unit_resolved, u)
+        return f"Result: {v} {f} = {result} {t}"
     except Exception as e:
         return f"Error: {str(e)}"
 
 
 @mcp.tool()
-async def convert_units_from_natural_language(query: str) -> str:
-    """Convert units using natural language queries.
-
-    Args:
-        query (str): Natural language conversion request
-
-    Returns:
-        str: JSON response with conversion results or error
-    """
+async def nlc(q: str) -> str:
+    """Natural language conversion"""
     import json
 
     try:
-        parsed = parse_natural_language_conversion(query)
+        parsed = parse_natural_language_conversion(q)
         if not parsed:
             return json.dumps(
                 {
                     "success": False,
                     "error": "parse_failed",
-                    "query": query,
+                    "query": q,
                     "supported_patterns": [
                         "convert X unit to unit",
                         "what is X unit in unit",
@@ -2063,7 +2052,7 @@ async def convert_units_from_natural_language(query: str) -> str:
             {
                 "success": True,
                 "conversion": {
-                    "original_query": query,
+                    "original_query": q,
                     "input_value": value,
                     "input_unit": from_unit,
                     "output_value": result,
@@ -2076,68 +2065,68 @@ async def convert_units_from_natural_language(query: str) -> str:
         )
     except Exception as e:
         return json.dumps(
-            {"success": False, "error": "conversion_failed", "details": str(e), "query": query}
+            {"success": False, "error": "conversion_failed", "details": str(e), "query": q}
         )
 
 
 @mcp.tool()
-async def perform_number_theory_analysis(n: int, operation: str, ctx: Context) -> str:
-    """Analyze number theory properties including primality, factors, GCD, LCM, and Fibonacci."""
+async def num(n: int, o: str, c: Context) -> str:
+    """Number theory operations"""
     try:
-        if operation == "is_prime":
-            await ctx.report_progress(progress=50, total=100)
+        if o == "is_prime":
+            await c.report_progress(progress=50, total=100)
             result = is_prime(n)
-            await ctx.report_progress(progress=100, total=100)
+            await c.report_progress(progress=100, total=100)
             return f"Result: {n} is {'prime' if result else 'not prime'}"
 
-        elif operation == "prime_factors":
-            await ctx.report_progress(progress=25, total=100)
+        elif o == "prime_factors":
+            await c.report_progress(progress=25, total=100)
             result = prime_factors(n)
-            await ctx.report_progress(progress=100, total=100)
+            await c.report_progress(progress=100, total=100)
             return f"Result: Prime factors of {n} = {result}"
 
-        elif operation == "divisors":
-            await ctx.report_progress(progress=30, total=100)
+        elif o == "divisors":
+            await c.report_progress(progress=30, total=100)
             divisors = [i for i in range(1, n + 1) if n % i == 0]
-            await ctx.report_progress(progress=100, total=100)
+            await c.report_progress(progress=100, total=100)
             return f"Result: Divisors of {n} = {divisors}"
 
-        elif operation == "totient":
-            await ctx.report_progress(progress=35, total=100)
+        elif o == "totient":
+            await c.report_progress(progress=35, total=100)
             result = sum(1 for i in range(1, n) if math.gcd(i, n) == 1)
-            await ctx.report_progress(progress=100, total=100)
+            await c.report_progress(progress=100, total=100)
             return f"Result: Euler's totient of {n} = {result}"
 
         else:
-            elicit_result = await ctx.elicit(
-                message=f"Unknown operation '{operation}'. Please select a number theory operation:",
+            elicit_result = await c.elicit(
+                message=f"Unknown operation '{o}'. Please select a number theory operation:",
                 response_type=NumberTheoryOperationChoice,
             )
 
             if elicit_result.action == "accept":
-                operation = elicit_result.data.number_theory_operation_type
-                if operation == "is_prime":
-                    await ctx.report_progress(progress=50, total=100)
+                o = elicit_result.data.number_theory_operation_type
+                if o == "is_prime":
+                    await c.report_progress(progress=50, total=100)
                     result = is_prime(n)
-                    await ctx.report_progress(progress=100, total=100)
+                    await c.report_progress(progress=100, total=100)
                     return f"Result: {n} is {'prime' if result else 'not prime'}"
-                elif operation == "prime_factors":
-                    await ctx.report_progress(progress=25, total=100)
+                elif o == "prime_factors":
+                    await c.report_progress(progress=25, total=100)
                     result = prime_factors(n)
-                    await ctx.report_progress(progress=100, total=100)
+                    await c.report_progress(progress=100, total=100)
                     return f"Result: Prime factors of {n} = {result}"
-                elif operation == "divisors":
-                    await ctx.report_progress(progress=30, total=100)
+                elif o == "divisors":
+                    await c.report_progress(progress=30, total=100)
                     divisors = [i for i in range(1, n + 1) if n % i == 0]
-                    await ctx.report_progress(progress=100, total=100)
+                    await c.report_progress(progress=100, total=100)
                     return f"Result: Divisors of {n} = {divisors}"
-                elif operation == "totient":
-                    await ctx.report_progress(progress=35, total=100)
+                elif o == "totient":
+                    await c.report_progress(progress=35, total=100)
                     result = sum(1 for i in range(1, n) if math.gcd(i, n) == 1)
-                    await ctx.report_progress(progress=100, total=100)
+                    await c.report_progress(progress=100, total=100)
                     return f"Result: Euler's totient of {n} = {result}"
                 else:
-                    return f"Error: Invalid operation selection '{operation}'. Valid options are: is_prime, prime_factors, divisors, totient"
+                    return f"Error: Invalid operation selection '{o}'. Valid options are: is_prime, prime_factors, divisors, totient"
             else:
                 return "Operation cancelled by user"
 
@@ -2146,25 +2135,21 @@ async def perform_number_theory_analysis(n: int, operation: str, ctx: Context) -
 
 
 @mcp.tool()
-async def create_mathematical_calculation_session(
-    session_id: str | None = None, variables: dict[str, float] | None = None
-) -> str:
-    """Create a new calculation session with optional initial variables for stateful computations."""
+async def sess(s: str | None = None, v: dict[str, float] | None = None) -> str:
+    """Create session"""
     try:
-        if not session_id:
-            session_id = f"session_{int(time.time() * 1000)}"
+        if not s:
+            s = f"session_{int(time.time() * 1000)}"
 
-        _get_session_manager().create_session(session_id, variables)
-        return f"Session created: {session_id}"
+        _get_session_manager().create_session(s, v)
+        return f"Session created: {s}"
     except Exception as e:
         return f"Error: {str(e)}"
 
 
 @mcp.tool()
-async def evaluate_expression_in_session_context(
-    session_id: str, expression: str, save_as: str | None = None
-) -> str:
-    """Execute calculations within a session context, with variable storage and retrieval."""
+async def sc(s: str, e: str, v: str | None = None) -> str:
+    """Session calculation"""
     global _active_mathematical_computations
 
     if _shutdown_requested:
@@ -2173,10 +2158,10 @@ async def evaluate_expression_in_session_context(
     _active_mathematical_computations += 1
 
     try:
-        result = compute_expression(expression, session_id)
+        result = compute_expression(e, s)
 
-        if result.success and save_as:
-            _get_session_manager().update_session(session_id, save_as, result.result)
+        if result.success and v:
+            _get_session_manager().update_session(s, v, result.result)
 
         return result.to_string()
     except Exception as e:
@@ -2186,11 +2171,11 @@ async def evaluate_expression_in_session_context(
 
 
 @mcp.tool()
-async def list_mathematical_session_variables(session_id: str) -> str:
-    """List all variables stored in the specified calculation session."""
-    variables = _get_session_manager().get_session(session_id)
+async def lsv(s: str) -> str:
+    """List session variables"""
+    variables = _get_session_manager().get_session(s)
     if variables is None:
-        return f"Error: Session {session_id} not found"
+        return f"Error: Session {s} not found"
 
     if not variables:
         return "No variables in session"
@@ -2203,20 +2188,20 @@ async def list_mathematical_session_variables(session_id: str) -> str:
 
 
 @mcp.tool()
-async def delete_mathematical_calculation_session(session_id: str) -> str:
-    """Delete a calculation session and free its associated resources."""
-    if _get_session_manager().delete_session(session_id):
-        return f"Session {session_id} deleted"
-    return f"Session {session_id} not found"
+async def ds(s: str) -> str:
+    """Delete session"""
+    if _get_session_manager().delete_session(s):
+        return f"Session {s} deleted"
+    return f"Session {s} not found"
 
 
 @mcp.tool()
-async def get_mathematical_computation_history(limit: int = 10) -> str:
-    """Retrieve recent calculation history with expressions and results."""
-    if limit > CALCULATION_HISTORY_ENTRY_LIMIT:
-        limit = CALCULATION_HISTORY_ENTRY_LIMIT
+async def hist(l: int = 10) -> str:
+    """Get calculation history"""
+    if l > CALCULATION_HISTORY_ENTRY_LIMIT:
+        l = CALCULATION_HISTORY_ENTRY_LIMIT
 
-    history = mathematical_calculation_history.get_recent(limit)
+    history = mathematical_calculation_history.get_recent(l)
     if not history:
         return "No calculation history available"
 
@@ -2227,15 +2212,15 @@ async def get_mathematical_computation_history(limit: int = 10) -> str:
 
 
 @mcp.tool()
-async def clear_mathematical_computation_history() -> str:
-    """Clear all stored calculation history entries."""
+async def clr() -> str:
+    """Clear history"""
     mathematical_calculation_history.clear()
     return "Calculation history cleared successfully"
 
 
 @mcp.tool()
-async def optimize_mathematical_computation_memory() -> str:
-    """Clean up expired cache entries and optimize memory usage."""
+async def opt() -> str:
+    """Optimize memory"""
     try:
         cleanup_stats = cleanup_expired_cache_entries()
         lines = ["Memory Cleanup Results:"]
@@ -2250,8 +2235,8 @@ async def optimize_mathematical_computation_memory() -> str:
 
 
 @mcp.tool()
-async def list_all_available_mathematical_functions_and_constants() -> str:
-    """List all available mathematical functions, constants, and supported operations."""
+async def ls() -> str:
+    """List functions"""
     lines = ["Available Mathematical Functions and Constants:"]
 
     lines.append("\\nBasic Math Functions:")
