@@ -64,6 +64,9 @@ class SemverPublisher:
         with open(self.pyproject_path, "w") as f:
             f.write(new_content)
 
+    def update_uv_lock(self) -> None:
+        self.run_command(["uv", "lock"])
+
     def run_command(self, cmd: list, cwd: Path | None = None) -> subprocess.CompletedProcess:
         try:
             result = subprocess.run(
@@ -102,7 +105,7 @@ class SemverPublisher:
         if not message:
             message = f"Release v{version}"
 
-        self.run_command(["git", "add", "pyproject.toml"])
+        self.run_command(["git", "add", "pyproject.toml", "uv.lock"])
         self.run_command(["git", "commit", "-m", message])
         self.run_command(["git", "tag", f"v{version}"])
 
@@ -149,6 +152,9 @@ class SemverPublisher:
 
             print(f"📝 Updating version to {new_version}...")
             self.update_pyproject_version(new_version)
+
+            print("🔒 Updating uv.lock file...")
+            self.update_uv_lock()
 
             print("🧹 Cleaning build directories...")
             self.clean_build()
