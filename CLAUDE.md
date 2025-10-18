@@ -140,15 +140,15 @@ pip install dist/*.whl
 11\. `delete_mathematical_calculation_session` - Session cleanup
 
 **System Monitoring**:
-12\. `get_mathematical_computation_performance_metrics` - Performance stats
-13\. `get_mathematical_security_audit_report` - Security status
-14\. `get_mathematical_memory_usage_statistics` - Memory analytics
+12\. `performance_metrics` - Performance stats
+13\. `security_status` - Security status
+14\. `memory_statistics` - Memory analytics
 
 **Management**:
-15\. `get_mathematical_computation_history` - Audit trail (1-100 recent calculations)
-16\. `clear_mathematical_computation_history` - History cleanup
-17\. `optimize_mathematical_computation_memory` - Cache/session cleanup
-18\. `list_all_available_mathematical_functions_and_constants` - Complete capability discovery
+15\. `get_calculation_history` - Audit trail (1-100 recent calculations)
+16\. `clear_history` - History cleanup
+17\. `optimize_memory` - Cache/session cleanup
+18\. `list_functions` - Complete capability discovery
 
 **Resources**: 3 MCP resources (`history://recent`, `functions://available`, `constants://math`)
 **Prompts**: 2 MCP prompts (`scientific_calculation`, `batch_calculation`)
@@ -242,7 +242,7 @@ pip install dist/*.whl
 ### Adding a New Mathematical Function
 
 1. Add function to `SAFE_MATHEMATICAL_FUNCTIONS` dict in `calculator.py`
-2. Update `list_all_available_mathematical_functions_and_constants` documentation
+2. Update `list_functions` documentation
 3. Add comprehensive tests in `tests/test_calculator.py`
 4. Verify security: ensure function can't bypass AST validation
 5. Run full test suite + security analysis
@@ -251,7 +251,7 @@ pip install dist/*.whl
 
 1. Add conversion factors to `UNIT_CONVERSION_FACTORS` dict
 2. Update unit aliases in `UNIT_ALIASES` dict
-3. Add category to `list_all_available_mathematical_functions_and_constants` output
+3. Add category to `list_functions` output
 4. Add conversion tests with edge cases
 5. Verify precision and rounding behavior
 
@@ -301,15 +301,15 @@ pip install dist/*.whl
 
 - Cache TTL cleanup timer initialization
 - Session cleanup interval (SESSION_CLEANUP_INTERVAL)
-- Call `optimize_mathematical_computation_memory` periodically
+- Call `optimize_memory` periodically
 
-**Performance Degradation**: Monitor via `get_mathematical_computation_performance_metrics`:
+**Performance Degradation**: Monitor via `performance_metrics`:
 
 - Cache hit rate (should be >70% for repetitive workloads)
 - Average computation time (should be \<100ms for simple expressions)
 - Memory usage (should stay below MAXIMUM_MEMORY_USAGE_MEGABYTES)
 
-**Security Alerts**: Check `get_mathematical_security_audit_report`:
+**Security Alerts**: Check `security_status`:
 
 - Rate limit violations (adjust MAXIMUM_CLIENT_REQUESTS_PER_TIME_WINDOW)
 - Forbidden pattern matches (review FORBIDDEN_PATTERNS)

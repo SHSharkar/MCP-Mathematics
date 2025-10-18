@@ -430,9 +430,9 @@ Complete reference tool that gives you instant access to all available mathemati
 
 Access these resources directly through the MCP protocol with their corresponding implementation functions:
 
-- **`history://recent`** - View recent calculation history (implemented by `get_recent_mathematical_computation_history`)
-- **`functions://available`** - Browse available mathematical functions (implemented by `get_available_mathematical_functions_catalog`)
-- **`constants://math`** - Access mathematical constants with their values (implemented by `get_comprehensive_mathematical_constants_catalog`)
+- **`history://recent`** - View recent calculation history (implemented by `recent_calculation_history`)
+- **`functions://available`** - Browse available mathematical functions (implemented by `mathematical_functions_catalog`)
+- **`constants://math`** - Access mathematical constants with their values (implemented by `mathematical_constants_catalog`)
 
 ## MCP Prompts
 
